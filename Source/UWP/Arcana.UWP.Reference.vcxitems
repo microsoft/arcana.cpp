@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <ItemsProjectGuid>{3B5BA6E6-3B02-4E92-93A7-333AA9DCFD7E}</ItemsProjectGuid>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileFullPath) has already been imported. Please double check and remove any redundant imports." Condition="'$(ArcanaImported)' == 'true'" />
+  <PropertyGroup>
+    <ArcanaImported>true</ArcanaImported>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ArcanaDirectory>$(MSBuildThisFileDirectory)</ArcanaDirectory>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(ArcanaDirectory);$(ArcanaDirectory)..\Shared</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies);runtimeobject.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(ArcanaDirectory)Arcana.UWP.vcxproj" Condition="'$(ConfigurationType)' == 'DynamicLibrary' Or '$(ConfigurationType)' == 'Application'">
+      <Project>{e4c54c47-397b-4d8e-9488-99d79a29ab38}</Project>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

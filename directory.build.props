@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+
+    <BuildOutputDir>$(MSBuildThisFileDirectory)BuildOutput\$(Configuration)\$(Platform)\$(MSBuildProjectName)\</BuildOutputDir>
+    <GslSubmoduleDir>$(MSBuildThisFileDirectory)Source\Submodules\GSL\</GslSubmoduleDir>
+
+    <GeneratedFilesDir>$(BuildOutputDir)Generated\</GeneratedFilesDir>
+    <IntDir>$(BuildOutputDir)Int\</IntDir>
+    <OutDir>$(BuildOutputDir)Bin\</OutDir>
+
+  </PropertyGroup>
+
+  <Import Condition="'$(ApplicationType)' == 'Windows Store' OR '$(KeyWord)' == 'Win32Proj'" Project="Windows.props" />
+  <Import Condition="'$(ApplicationType)' == 'Android' OR '$(KeyWord)' == 'Android'" Project="Android.props" />
+
+</Project>

@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <ItemsProjectGuid>{6A0CC394-23C1-473C-9E20-06128685BE86}</ItemsProjectGuid>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MSBuildThisFileDirectory)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectCapability Include="SourceItemsFromImports" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)AlgorithmUnitTest.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)Containers\ContainerUnitTest.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)ExpectedUnitTest.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)Experimental\ArrayUnitTest.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)InplaceFunctionUnitTest.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)IteratorUnitTest.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)Messaging\MediatorUnitTest.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)Scheduling\SchedulingUnitTest.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)Threading\CoroutineTests.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)Threading\DispatcherUnitTest.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)Threading\TaskUnitTest.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)TypeTraitsTest.cpp" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.14393.0</WindowsTargetPlatformMinVersion>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <!-- Standard config. -->
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32_LEAN_AND_MEAN;NOMINMAX</PreprocessorDefinitions>
+
+      <!-- Disable warning about codecvt deprecation as there is no replacement yet in the C++ standard library for it as of C++17. -->
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING</PreprocessorDefinitions>
+
+      <!-- Manually define the C++ coroutine feature test macro (remove once https://devdiv.visualstudio.com/DevDiv/_workitems/edit/424881 is complete). -->
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);__cpp_coroutines</PreprocessorDefinitions>
+
+      <!-- Enable co_await/co_return (for coroutines). -->
+      <AdditionalOptions>%(AdditionalOptions) /await</AdditionalOptions>
+
+      <!-- Disable C++/CX. -->
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+</Project>

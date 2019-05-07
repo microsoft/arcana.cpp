@@ -1,0 +1,31 @@
+{
+    "id": "f95229e8-d89f-f847-1d14-fd603d3adbd5",
+    "name": "arcana.cpp",
+    "description": "General purpose C++ library.",
+    "branch": "refs/heads/master",
+    "tags": [
+        "omg",
+        "native",
+        "c++",
+        "task",
+        "async",
+        "so:arcana"
+    ],
+    "languages": [
+        "C++"
+    ],
+    "platform": "Windows,Android,iOS",
+    "projectType": "Internal",
+    "owners": {
+        "compcentralAreaPath": ""
+    },
+    "links": {
+        "ReadmeUrl": "https://microsoft.visualstudio.com/DefaultCollection/_apis/git/repositories/c0846846-9547-42fd-ae57-1f28f04295d5/items?scopePath=/README.md",
+        "WikiUrl": ""
+    },
+    "issues": {
+        "AreaPath": "",
+        "AddUrl": "https://microsoft.visualstudio.com//Apps/_workItems?witd=Bug&_a=new",
+        "queryPath": "Shared Queries/Feedback"
+    }
+}

@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <ItemsProjectGuid>{5F50DA01-6416-4ABD-9514-28E68FAC01BA}</ItemsProjectGuid>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MSBuildThisFileDirectory)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectCapability Include="SourceItemsFromImports" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\containers\sorted_vector.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\containers\ticketed_collection.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\experimental\array.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\functional\inplace_function.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\math.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\finally_scope.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\iterators.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\macros.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\expected.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\scheduling\state_machine_state.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\string.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\scheduling\state_machine.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\coroutine.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\internal\callable_traits.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\type_traits.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\dispatcher.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\messaging\mediator.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\messaging\router.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\sentry.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\affinity.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\blocking_concurrent_queue.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\cancellation.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\internal\internal_task.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\pending_task_scope.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\task.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\containers\unique_vector.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\algorithm.h" />
+  </ItemGroup>
+</Project>
