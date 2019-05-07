@@ -74,22 +74,16 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 arcana.cpp does not use [SemVer](http://semver.org/). Instead, it uses a version derived from the current date. Therefore, the version contains no semantic information.
 
-## Owners
+## Maintainers
 
-Arcana is currently owned by the Babylon Team at Microsoft.  With questions, please contact one of the following:
+With questions, please contact one of the maintainers:
 
-- [Justin Murray](https://twitter.com/syntheticmagus): Babylon Native developer, Arcana point-of-contact.
-- [Gary Hsu](https://twitter.com/bghgary): Babylon Native project and team lead.
-
-## License
-
-Arcana is freely available under the terms of the MIT License.  See [License.md](License.md) for the text of the license.
-
-Additionally, Arcana includes a single file, [inplace_function.h](Source/Shared/arcana/functional/inplace_function.h), which was imported from a [C++ Working Group](https://github.com/WG21-SG14/SG14/blob/master/SG14/inplace_function.h) is licensed separately under the terms of the Boost Software License.  See [NOTICE.txt](NOTICE.txt) for more information.
+- [Justin Murray](https://twitter.com/syntheticmagus)
+- [Gary Hsu](https://twitter.com/bghgary)
 
 ## Credits
 
-Arcana owes especial thanks to the original Arcana team:
+Arcana owes especial thanks to:
 
 - [Julien Monat Rodier](https://github.com/jumonatr): project creator and primary developer/architect.
 - [Ryan Tremblay](https://github.com/ryantrem): task system co-architect and creator of the coroutine system.
