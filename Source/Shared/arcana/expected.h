@@ -69,10 +69,25 @@ namespace arcana
     class bad_expected_access : public std::exception
     {
     public:
-        const char* what() const override
+        const char* what() const noexcept override
         {
             return "tried accessing value()/error() of an expected when it wasn't set";
         }
+    };
+
+    class exception_with_reason : public std::exception
+    {
+    public:
+        exception_with_reason(const char* reason)
+            : m_reason(reason)
+        {}
+
+        const char* what() const noexcept override
+        {
+            return m_reason.c_str();
+        }
+    private:
+        std::string m_reason;
     };
 
     template<typename E>
