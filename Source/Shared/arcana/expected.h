@@ -413,7 +413,7 @@ namespace arcana
     template<typename Left, typename Right>
     struct largest_error
     {
-        using type = typename typename largest_integral_constant<error_priority<Left>, error_priority<Right>>::type::type;
+        using type = typename largest_integral_constant<error_priority<Left>, error_priority<Right>>::type::type;
     };
 
     namespace internal
