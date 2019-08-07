@@ -69,7 +69,7 @@ namespace arcana
     class bad_expected_access : public std::exception
     {
     public:
-        const char* what() const override
+        const char* what() const noexcept override
         {
             return "tried accessing value()/error() of an expected when it wasn't set";
         }
@@ -398,7 +398,7 @@ namespace arcana
     template<typename Left, typename Right>
     struct largest_error
     {
-        using type = typename typename largest_integral_constant<error_priority<Left>, error_priority<Right>>::type::type;
+        using type = typename largest_integral_constant<error_priority<Left>, error_priority<Right>>::type::type;
     };
 
     namespace internal
