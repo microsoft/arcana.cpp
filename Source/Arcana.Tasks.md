@@ -115,7 +115,7 @@ arcana::task<void, std::error_code> DoSomethingElseAsync()
 
 ## Schedulers
 
-When a task is started (`arcana::make_task`) or a task continuation is registered (`arcana::task<ResultT, ErrorT>::then`), a scheduler is specified to determine the context in which the task body is executed. A scheduler is simply an object with a `queue` function that accepts a parameterless callable, and as such, this mechanism is completely customizable/extensible. The Arcana Task system includes several default schedulers.
+When a task is started (`arcana::make_task`) or a task continuation is registered (`arcana::task<ResultT, ErrorT>::then`), a scheduler is specified to determine the context in which the task body is executed. A scheduler is simply a callable that accepts a parameterless callable as its argument, and invokes the passed in parameterless callable in some context at some point in time (e.g. schedules the work). As such, this mechanism is completely customizable/extensible. The Arcana Task system includes several default schedulers.
 
 **Dispatchers** are a specific type of scheduler that have a work queue and in some way process the work in that queue. Some of the default schedulers are dispatcher based (derive from the `arcana::dispatcher` base class). Dispatchers are most commonly used to schedule tasks, but they can be used outside the context of the task system as well.
 

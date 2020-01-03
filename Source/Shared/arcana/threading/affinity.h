@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <thread>
 
 namespace arcana
@@ -9,16 +10,14 @@ namespace arcana
     public:
         affinity(const std::thread::id& id)
             : m_thread{ id }
-            , m_set{ true }
         {}
 
         affinity()
-            : m_set{ false }
         {}
 
         bool check() const
         {
-            if (!m_set)
+            if (!m_thread)
                 return true;
 
             return std::this_thread::get_id() == m_thread;
@@ -26,11 +25,10 @@ namespace arcana
 
         bool is_set() const
         {
-            return m_set;
+            return m_thread.has_value();
         }
 
     private:
-        std::thread::id m_thread;
-        bool m_set; // TODO 12333940: replace with std::optional when updating to C++17
+        std::optional<std::thread::id> m_thread;
     };
 }
