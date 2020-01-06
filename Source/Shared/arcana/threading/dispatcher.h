@@ -125,13 +125,7 @@ namespace arcana
         {
             m_thread = std::thread{ [&]() {
 
-                // TODO: Set the affinity when usage bugs are fixed.
-                // https://microsoft.visualstudio.com/OS/_workitems/edit/14150748
-                constexpr bool should_set_affinity{ false };
-                if (should_set_affinity)
-                {
-                    this->set_affinity(std::this_thread::get_id());
-                }
+                this->set_affinity(std::this_thread::get_id());
 
                 while (!m_cancellation.cancelled())
                 {
