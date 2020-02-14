@@ -57,8 +57,7 @@ set(SOURCES ${SOURCES}
     "Source/Shared/arcana/threading/internal/internal_task.h")
 
 if(WINDOWS_STORE)
-    # UWP
-    set (SOURCES ${SOURCES}
+    set(SOURCES ${SOURCES}
         "Source/UWP/arcana/hresult.h"
         "Source/UWP/arcana/hresult.cpp"
         "Source/UWP/arcana/containers/unordered_bimap.h"
@@ -67,18 +66,21 @@ if(WINDOWS_STORE)
         "Source/UWP/arcana/threading/task_conversions.h"
         "Source/UWP/arcana/threading/task_schedulers.h"
         "Source/UWP/arcana/threading/task_schedulers.cpp")
-endif()
 
-add_library(arcana ${SOURCES})
+    add_library(arcana ${SOURCES})
 
-target_include_directories(arcana PUBLIC "Source/Submodules/GSL/include")
-target_include_directories(arcana PUBLIC "Source/Shared")
+    target_include_directories(arcana PUBLIC "Source/Submodules/GSL/include")
+    target_include_directories(arcana PUBLIC "Source/Shared")
 
-set_target_properties(arcana PROPERTIES LINKER_LANGUAGE CXX)
+    set_target_properties(arcana PROPERTIES LINKER_LANGUAGE CXX)
 
-target_compile_definitions(arcana PRIVATE NOMINMAX)
-target_compile_definitions(arcana PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+    target_compile_definitions(arcana PRIVATE NOMINMAX)
+    target_compile_definitions(arcana PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 
-if(WINDOWS_STORE)
     target_include_directories(arcana PUBLIC "Source/UWP")
+else()
+    add_library(arcana INTERFACE)
+
+    target_include_directories(arcana INTERFACE "Source/Submodules/GSL/include")
+    target_include_directories(arcana INTERFACE "Source/Shared")
 endif()
