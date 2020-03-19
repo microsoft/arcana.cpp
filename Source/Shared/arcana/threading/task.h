@@ -352,7 +352,7 @@ namespace arcana
 
         for (task<void, ErrorT>& task : tasks)
         {
-            task.then(inline_scheduler, cancellation::none(), [data, result](const basic_expected<void, ErrorT>& exp) mutable {
+            task.then(inline_scheduler, cancellation::none(), [data, result](const basic_expected<void, ErrorT>& exp) mutable noexcept(std::is_same<ErrorT, std::error_code>::value) {
                 bool last = false;
                 {
                     std::lock_guard<std::mutex> guard{ data->mutex };
@@ -408,7 +408,7 @@ namespace arcana
         //using forloop with index to be able to keep proper order of results
         for (auto idx = 0U; idx < data->results.size(); idx++)
         {
-            tasks[idx].then(arcana::inline_scheduler, cancellation::none(), [data, result, idx](const basic_expected<T, ErrorT>& exp) mutable {
+            tasks[idx].then(arcana::inline_scheduler, cancellation::none(), [data, result, idx](const basic_expected<T, ErrorT>& exp) mutable noexcept(std::is_same<ErrorT, std::error_code>::value) {
                 bool last = false;
                 {
                     std::lock_guard<std::mutex> guard{ data->mutex };

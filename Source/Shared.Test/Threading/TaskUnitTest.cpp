@@ -573,7 +573,7 @@ namespace UnitTests
         {
             std::promise<int> work;
 
-            arcana::when_all(gsl::span<arcana::task<void, std::exception_ptr>>{}).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+            arcana::when_all(gsl::span<arcana::task<void, std::exception_ptr>>{}).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]()
             {
                 work.set_value(6);
             });
