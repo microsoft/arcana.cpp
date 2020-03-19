@@ -20,21 +20,18 @@ namespace arcana
             template<typename CallableT>
             void operator()(CallableT&& callable) const
             {
-                auto callback = [](PTP_CALLBACK_INSTANCE instance, PVOID context, PTP_WORK work)
+                auto callback = [](PVOID context) -> DWORD
                 {
                     auto callable_ptr = std::unique_ptr<CallableT>(static_cast<CallableT*>(context));
                     (*callable_ptr)();
-                    CloseThreadpoolWork(work);
+                    return 0;
                 };
 
                 auto callable_ptr = std::make_unique<CallableT>(callable);
-                PTP_WORK work = CreateThreadpoolWork(callback, callable_ptr.release(), nullptr);
-                if (work == nullptr)
+                if (!QueueUserWorkItem(callback, callable_ptr.release(), 0))
                 {
-                    throw win32_exception{ ::GetLastError() };
+                    throw win32_exception{ GetLastError() };
                 }
-
-                SubmitThreadpoolWork(work);
             }
         } threadpool_scheduler{};
     }
