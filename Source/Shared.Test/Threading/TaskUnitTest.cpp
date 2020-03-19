@@ -569,6 +569,18 @@ namespace UnitTests
             Assert::AreEqual(6, work.get_future().get());
         }
 
+        TEST_METHOD(WhenAllWithExceptions)
+        {
+            std::promise<int> work;
+
+            arcana::when_all(gsl::span<arcana::task<void, std::exception_ptr>>{}).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+            {
+                work.set_value(6);
+            });
+
+            Assert::AreEqual(6, work.get_future().get());
+        }
+
         TEST_METHOD(EmptyWhenAll)
         {
             arcana::background_dispatcher<32> dis1;
