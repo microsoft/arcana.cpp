@@ -29,7 +29,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)arcana\scheduling\state_machine.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\coroutine.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\internal\callable_traits.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\task_schedulers.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)arcana\type_traits.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)arcana\threading\dispatcher.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)arcana\messaging\mediator.h" />

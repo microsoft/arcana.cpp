@@ -5,6 +5,7 @@
 #pragma once
 
 #include <Windows.h>
+#include <memory>
 #include <functional>
 #include <arcana/win32_exception.h>
 

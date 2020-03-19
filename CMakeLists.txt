@@ -70,8 +70,8 @@ if(WINDOWS_STORE)
     add_library(arcana ${SOURCES})
 
     target_include_directories(arcana PUBLIC "Source/Submodules/GSL/include")
-    target_include_directories(arcana PUBLIC "Source/UWP")
     target_include_directories(arcana PUBLIC "Source/Shared")
+    target_include_directories(arcana PUBLIC "Source/UWP")
 
     set_target_properties(arcana PROPERTIES LINKER_LANGUAGE CXX)
 
@@ -81,10 +81,13 @@ else()
     add_library(arcana INTERFACE)
 
     target_include_directories(arcana INTERFACE "Source/Submodules/GSL/include")
+    target_include_directories(arcana INTERFACE "Source/Shared")
 
     if(WIN32)
         target_include_directories(arcana INTERFACE "Source/Win32")
+    elseif(ANDROID)
+        target_include_directories(arcana INTERFACE "Source/Android")
+    elseif(APPLE)
+        target_include_directories(arcana INTERFACE "Source/Apple")
     endif()
-
-    target_include_directories(arcana INTERFACE "Source/Shared")
 endif()
