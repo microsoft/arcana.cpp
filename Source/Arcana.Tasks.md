@@ -157,7 +157,11 @@ auto task = arcana::make_task(scheduler, arcana::cancellation::none(), []
 
 ### threadpool_scheduler
 
-`threadpool_scheduler` is a Windows specific scheduler that uses the Windows Runtime [`ThreadPool`](https://docs.microsoft.com/en-us/uwp/api/Windows.System.Threading.ThreadPool).
+`threadpool_scheduler` is a scheduler that uses a threadpool to schedule work.
+
+* UWP uses the Windows Runtime [`ThreadPool`](https://docs.microsoft.com/en-us/uwp/api/Windows.System.Threading.ThreadPool)
+* Win32 uses the [Win32 Threadpool](https://docs.microsoft.com/en-us/windows/win32/procthread/thread-pools)
+* Other platforms currently fall back to creating a separate thread using `std::thread` as a stop gap solution.
 
 ```c++
 auto task = arcana::make_task(arcana::threadpool_scheduler, arcana::cancellation::none(), []

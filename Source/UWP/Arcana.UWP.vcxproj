@@ -27,7 +27,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="arcana\containers\unordered_bimap.h" />
     <ClInclude Include="arcana\hresult.h" />
     <ClInclude Include="arcana\threading\set_thread_name.h" />
     <ClInclude Include="arcana\threading\task_conversions.h" />

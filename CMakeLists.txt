@@ -83,4 +83,8 @@ else()
 
     target_include_directories(arcana INTERFACE "Source/Submodules/GSL/include")
     target_include_directories(arcana INTERFACE "Source/Shared")
+
+    if(WIN32)
+        target_include_directories(arcana INTERFACE "Source/Win32")
+    endif()
 endif()
