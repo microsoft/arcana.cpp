@@ -21,7 +21,8 @@ set(SOURCES
 set(SOURCES ${SOURCES}
     "Source/Shared/arcana/containers/sorted_vector.h"
     "Source/Shared/arcana/containers/ticketed_collection.h"
-    "Source/Shared/arcana/containers/unique_vector.h")
+    "Source/Shared/arcana/containers/unique_vector.h"
+    "Source/Shared/arcana/containers/unordered_bimap.h")
 
 # experimental
 set(SOURCES ${SOURCES}
@@ -60,7 +61,6 @@ if(WINDOWS_STORE)
     set(SOURCES ${SOURCES}
         "Source/UWP/arcana/hresult.h"
         "Source/UWP/arcana/hresult.cpp"
-        "Source/UWP/arcana/containers/unordered_bimap.h"
         "Source/UWP/arcana/threading/set_thread_name.h"
         "Source/UWP/arcana/threading/set_thread_name.cpp"
         "Source/UWP/arcana/threading/task_conversions.h"
@@ -70,21 +70,21 @@ if(WINDOWS_STORE)
     add_library(arcana ${SOURCES})
 
     target_include_directories(arcana PUBLIC "Source/Submodules/GSL/include")
+    target_include_directories(arcana PUBLIC "Source/UWP")
     target_include_directories(arcana PUBLIC "Source/Shared")
 
     set_target_properties(arcana PROPERTIES LINKER_LANGUAGE CXX)
 
     target_compile_definitions(arcana PRIVATE NOMINMAX)
     target_compile_definitions(arcana PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
-
-    target_include_directories(arcana PUBLIC "Source/UWP")
 else()
     add_library(arcana INTERFACE)
 
     target_include_directories(arcana INTERFACE "Source/Submodules/GSL/include")
-    target_include_directories(arcana INTERFACE "Source/Shared")
 
     if(WIN32)
         target_include_directories(arcana INTERFACE "Source/Win32")
     endif()
+
+    target_include_directories(arcana INTERFACE "Source/Shared")
 endif()
