@@ -4,11 +4,10 @@
 
 #pragma once
 
-#include <thread>
-#include <arcana/functional/inplace_function.h>
 #include <android/looper.h>
-#include <array>
+#include <arcana/functional/inplace_function.h>
 #include <memory>
+#include <thread>
 #include <unistd.h>
 
 namespace arcana
