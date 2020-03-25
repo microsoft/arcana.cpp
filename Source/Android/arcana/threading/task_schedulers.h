@@ -43,7 +43,7 @@ namespace arcana
 
             ALooper_acquire(m_looper);
 
-            if (ALooper_addFd(looper, m_fd[0], ALOOPER_POLL_CALLBACK, ALOOPER_EVENT_INPUT, looper_callback, nullptr) == -1)
+            if (ALooper_addFd(m_looper, m_fd[0], ALOOPER_POLL_CALLBACK, ALOOPER_EVENT_INPUT, looper_callback, nullptr) == -1)
             {
                 throw std::runtime_error{ "Failed to add file descriptor to looper" };
             }
