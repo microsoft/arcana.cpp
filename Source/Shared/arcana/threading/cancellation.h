@@ -56,7 +56,7 @@ namespace arcana
 
     protected:
         cancellation() = default;
-        cancellation& operator=(const cancellation&) = default;
+        cancellation& operator=(const cancellation&) = delete;
 
         ~cancellation()
         {
