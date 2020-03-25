@@ -34,6 +34,9 @@
       <Platform>x86</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="arcana\threading\task_schedulers.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D3384115-A923-4F26-86B2-CCE99B4241DD}</ProjectGuid>
     <Keyword>Android</Keyword>
