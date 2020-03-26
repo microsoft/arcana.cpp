@@ -68,6 +68,9 @@ namespace arcana
             m_fd[1] = other.m_fd[1];
 
             other.m_looper = nullptr;
+            other.m_fd[0] = -1;
+            other.m_fd[1] = -1;
+
             return *this;
         }
 
