@@ -27,6 +27,7 @@ namespace arcana
         } threadpool_scheduler{};
     }
 
+    template<size_t WorkSize>
     class looper_scheduler final
     {
     public:
@@ -50,13 +51,7 @@ namespace arcana
 
         ~looper_scheduler()
         {
-            if (m_looper != nullptr)
-            {
-                ALooper_removeFd(m_looper, m_fd[0]);
-                ALooper_release(m_looper);
-                close(m_fd[0]);
-                close(m_fd[1]);
-            }
+            reset();
         }
 
         looper_scheduler(looper_scheduler&& other)
@@ -66,23 +61,22 @@ namespace arcana
 
         looper_scheduler& operator=(looper_scheduler&& other)
         {
+            reset();
+
             m_looper = other.m_looper;
             m_fd[0] = other.m_fd[0];
             m_fd[1] = other.m_fd[1];
 
             other.m_looper = nullptr;
-            other.m_fd[0] = 0;
-            other.m_fd[1] = 0;
-
             return *this;
         }
 
         template<typename CallableT>
         void operator()(CallableT&& callable) const
         {
-            auto function_ptr = std::make_unique<stdext::inplace_function<void()>>([callable{ std::forward<CallableT>(callable) }]() { callable(); });
-            auto raw_function_ptr = function_ptr.release();
-            if (write(m_fd[1], &raw_function_ptr, sizeof(raw_function_ptr)) == -1)
+            auto callback_ptr = std::make_unique<callback_t>([callable{ std::forward<CallableT>(callable) }]() { callable(); });
+            auto raw_callback_ptr = callback_ptr.release();
+            if (write(m_fd[1], &raw_callback_ptr, sizeof(raw_callback_ptr)) == -1)
             {
                 throw std::runtime_error{ std::strerror(errno) };
             }
@@ -100,16 +94,29 @@ namespace arcana
         }
 
     private:
+        using callback_t = stdext::inplace_function<void(), WorkSize>;
+
+        void reset()
+        {
+            if (m_looper != nullptr)
+            {
+                ALooper_removeFd(m_looper, m_fd[0]);
+                ALooper_release(m_looper);
+                close(m_fd[0]);
+                close(m_fd[1]);
+            }
+        }
+
         static int looper_callback(int fd, int events, void* data)
         {
-            stdext::inplace_function<void()>* raw_function_ptr;
-            if (read(fd, &raw_function_ptr, sizeof(raw_function_ptr)) == -1)
+            callback_t* raw_callback_ptr;
+            if (read(fd, &raw_callback_ptr, sizeof(raw_callback_ptr)) == -1)
             {
                 throw std::runtime_error{ std::strerror(errno) };
             }
 
-            std::unique_ptr<stdext::inplace_function<void()>> function_ptr{ raw_function_ptr };
-            (*function_ptr)();
+            std::unique_ptr<callback_t> callback_ptr{ raw_callback_ptr };
+            (*callback_ptr)();
 
             return 1;
         }
