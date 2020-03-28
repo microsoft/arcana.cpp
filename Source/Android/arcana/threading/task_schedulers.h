@@ -32,11 +32,12 @@ namespace arcana
     {
     public:
         looper_scheduler(looper_scheduler&) = delete;
+        looper_scheduler& operator=(looper_scheduler&) = delete;
 
         explicit looper_scheduler(ALooper* looper)
             : m_looper{ looper }
         {
-            if (pipe(m_fd) == -1)
+            if (pipe(m_fd.data()) == -1)
             {
                 throw std::runtime_error{ std::strerror(errno) };
             }
@@ -51,25 +52,27 @@ namespace arcana
 
         ~looper_scheduler()
         {
-            reset();
+            destroy();
         }
 
         looper_scheduler(looper_scheduler&& other)
+            : m_looper{ other.m_looper }
+            , m_fd{ other.m_fd }
         {
-            *this = std::move(other);
+            other.m_looper = nullptr;
+            other.m_fd = { -1, -1 };
         }
 
         looper_scheduler& operator=(looper_scheduler&& other)
         {
-            reset();
-
-            m_looper = other.m_looper;
-            m_fd[0] = other.m_fd[0];
-            m_fd[1] = other.m_fd[1];
-
-            other.m_looper = nullptr;
-            other.m_fd[0] = -1;
-            other.m_fd[1] = -1;
+            if (this != &other)
+            {
+                destroy();
+                m_looper = other.m_looper;
+                m_fd = other.m_fd;
+                other.m_looper = nullptr;
+                other.m_fd = { -1, -1 };
+            }
 
             return *this;
         }
@@ -99,7 +102,7 @@ namespace arcana
     private:
         using callback_t = stdext::inplace_function<void(), WorkSize>;
 
-        void reset()
+        void destroy()
         {
             if (m_looper != nullptr)
             {
@@ -125,6 +128,6 @@ namespace arcana
         }
 
         ALooper* m_looper;
-        int m_fd[2];
+        std::array<int, 2> m_fd;
     };
 }
