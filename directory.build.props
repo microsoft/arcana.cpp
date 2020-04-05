@@ -12,7 +12,7 @@
 
   </PropertyGroup>
 
-  <Import Condition="'$(ApplicationType)' == 'Windows Store' OR '$(KeyWord)' == 'Win32Proj'" Project="Windows.props" />
-  <Import Condition="'$(ApplicationType)' == 'Android' OR '$(KeyWord)' == 'Android'" Project="Android.props" />
+  <Import Condition="'$(ApplicationType)' == 'Android'" Project="Android.props" />
+  <Import Condition="'$(ApplicationType)' != 'Android'" Project="Windows.props" />
 
 </Project>

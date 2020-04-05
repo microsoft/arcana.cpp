@@ -57,21 +57,21 @@ set(SOURCES ${SOURCES}
     "Source/Shared/arcana/threading/internal/callable_traits.h"
     "Source/Shared/arcana/threading/internal/internal_task.h")
 
-if(WINDOWS_STORE)
+if(WIN32)
     set(SOURCES ${SOURCES}
-        "Source/UWP/arcana/hresult.h"
-        "Source/UWP/arcana/hresult.cpp"
-        "Source/UWP/arcana/threading/set_thread_name.h"
-        "Source/UWP/arcana/threading/set_thread_name.cpp"
-        "Source/UWP/arcana/threading/task_conversions.h"
-        "Source/UWP/arcana/threading/task_schedulers.h"
-        "Source/UWP/arcana/threading/task_schedulers.cpp")
+        "Source/Windows/arcana/hresult.h"
+        "Source/Windows/arcana/hresult.cpp"
+        "Source/Windows/arcana/threading/set_thread_name.h"
+        "Source/Windows/arcana/threading/set_thread_name.cpp"
+        "Source/Windows/arcana/threading/task_conversions.h"
+        "Source/Windows/arcana/threading/task_schedulers.h"
+        "Source/Windows/arcana/threading/task_schedulers.cpp")
 
     add_library(arcana ${SOURCES})
 
     target_include_directories(arcana PUBLIC "Source/Submodules/GSL/include")
     target_include_directories(arcana PUBLIC "Source/Shared")
-    target_include_directories(arcana PUBLIC "Source/UWP")
+    target_include_directories(arcana PUBLIC "Source/Windows")
 
     set_target_properties(arcana PROPERTIES LINKER_LANGUAGE CXX)
 
@@ -83,9 +83,7 @@ else()
     target_include_directories(arcana INTERFACE "Source/Submodules/GSL/include")
     target_include_directories(arcana INTERFACE "Source/Shared")
 
-    if(WIN32)
-        target_include_directories(arcana INTERFACE "Source/Win32")
-    elseif(ANDROID)
+    if(ANDROID)
         target_include_directories(arcana INTERFACE "Source/Android")
     elseif(APPLE)
         target_include_directories(arcana INTERFACE "Source/Apple")
@@ -93,3 +91,5 @@ else()
         target_include_directories(arcana INTERFACE "Source/Unix")
     endif()
 endif()
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
