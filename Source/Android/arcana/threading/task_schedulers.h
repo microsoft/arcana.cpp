@@ -32,8 +32,8 @@ namespace arcana
     class looper_scheduler final
     {
     public:
-        looper_scheduler(looper_scheduler&) = delete;
-        looper_scheduler& operator=(looper_scheduler&) = delete;
+        looper_scheduler(const looper_scheduler&) = delete;
+        looper_scheduler& operator=(const looper_scheduler&) = delete;
 
         explicit looper_scheduler(ALooper* looper)
             : m_looper{ looper }
