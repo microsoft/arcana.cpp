@@ -362,8 +362,15 @@ namespace stdext
                 break;
             case Operation::Copy:
             {
-                const FunctorT* source = (const FunctorT*)const_cast<void*>(fromPtr);
-                new (thisFunctor) FunctorT(*source);
+                if constexpr (std::is_copy_constructible<FunctorT>::value)
+                {
+                    const FunctorT* source = (const FunctorT*)const_cast<void*>(fromPtr);
+                    new (thisFunctor) FunctorT(*source);
+                }
+                else
+                {
+                    throw std::runtime_error("Cannot copy non-copyable inplace function.");
+                }
                 break;
             }
             case Operation::Move:
