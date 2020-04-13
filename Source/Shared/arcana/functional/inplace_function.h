@@ -33,24 +33,38 @@
 namespace stdext
 {
     constexpr size_t InplaceFunctionDefaultCapacity = 32;
-
-    enum class inplace_function_operation
+        
+    template<bool SupportsCopy>
+    struct inplace_function_operation
     {
-        Destroy,
-        Copy,
-        Move
+        enum class operations_enum
+        {
+            Destroy,
+            Copy,
+            Move
+        };
+    };
+    template<>
+    struct inplace_function_operation<false>
+    {
+        enum class operations_enum
+        {
+            Destroy,
+            Move
+        };
     };
 
     template<typename SignatureT,
              size_t Capacity = InplaceFunctionDefaultCapacity,
-             size_t Alignment = alignof(std::max_align_t)>
+             size_t Alignment = alignof(std::max_align_t),
+             bool Copyable = true>
     class /*alignas(Alignment)*/ inplace_function;
 
-    template<typename RetT, typename... ArgsT, size_t Capacity, size_t Alignment>
-    class /*alignas(Alignment)*/ inplace_function<RetT(ArgsT...), Capacity, Alignment>
+    template<typename RetT, typename... ArgsT, size_t Capacity, size_t Alignment, bool Copyable>
+    class /*alignas(Alignment)*/ inplace_function<RetT(ArgsT...), Capacity, Alignment, Copyable>
     {
     public:
-        template<typename SignatureT2, std::size_t Capacity2, std::size_t Alignment2>
+        template<typename SignatureT2, std::size_t Capacity2, std::size_t Alignment2, bool Copyable2>
         friend class inplace_function;
 
         // TODO create free operator overloads, to handle switched arguments
@@ -73,6 +87,8 @@ namespace stdext
         template<typename CallableT>
         inplace_function(const CallableT& c)
         {
+            static_assert(!Copyable || std::is_copy_constructible<CallableT>::value, 
+                "Cannot create a copyable inplace function from a non-copyable callable.");
             this->set(c);
         }
 
@@ -82,6 +98,8 @@ namespace stdext
         template<typename CallableT, class = typename std::enable_if<!std::is_lvalue_reference<CallableT>::value>::type>
         inplace_function(CallableT&& c)
         {
+            static_assert(!Copyable || std::is_copy_constructible<CallableT>::value, 
+                "Cannot create a copyable inplace function from a non-copyable callable.");
             this->set(std::move(c));
         }
 
@@ -89,6 +107,7 @@ namespace stdext
         // May throw any exception encountered by the constructor when copying the target object
         inplace_function(const inplace_function& other)
         {
+            static_assert(Copyable, "Cannot copy-construct from a non-copyable inplace function.");
             this->copy(other);
         }
 
@@ -103,7 +122,7 @@ namespace stdext
         // May throw any exception encountered by the constructor when copying the target object
         // If OtherCapacity is greater than Capacity, a compile-time error is issued
         template<size_t OtherCapacity, size_t OtherAlignment>
-        inplace_function(const inplace_function<RetT(ArgsT...), OtherCapacity, OtherAlignment>& other)
+        inplace_function(const inplace_function<RetT(ArgsT...), OtherCapacity, OtherAlignment, true>& other)
         {
             this->copy(other);
         }
@@ -121,6 +140,7 @@ namespace stdext
         // May throw any exception encountered by the assignment operator when copying the target object
         inplace_function& operator=(const inplace_function& other)
         {
+            static_assert(Copyable, "Cannot copy-assign from a non-copyable inplace function");
             this->clear();
             this->copy(other);
             return *this;
@@ -139,7 +159,7 @@ namespace stdext
         // If the copy constructor of target object throws, this is left in uninitialized state
         // If OtherCapacity is greater than Capacity, a compile-time error is issued
         template<size_t OtherCapacity, size_t OtherAlignment>
-        inplace_function& operator=(const inplace_function<RetT(ArgsT...), OtherCapacity, OtherAlignment>& other)
+        inplace_function& operator=(const inplace_function<RetT(ArgsT...), OtherCapacity, OtherAlignment, true>& other)
         {
             this->clear();
             this->copy(other);
@@ -226,7 +246,7 @@ namespace stdext
         }
 
         template<size_t OtherCapacity, size_t OtherAlignment>
-        void copy(const inplace_function<RetT(ArgsT...), OtherCapacity, OtherAlignment>& other)
+        void copy(const inplace_function<RetT(ArgsT...), OtherCapacity, OtherAlignment, true>& other)
         {
             static_assert(OtherCapacity <= Capacity, "Can't squeeze larger inplace_function into a smaller one");
             static_assert(Alignment % OtherAlignment == 0, "Incompatible alignments");
@@ -246,8 +266,8 @@ namespace stdext
                 to = from;
         }
 
-        template<size_t OtherCapacity, size_t OtherAlignment>
-        void move(inplace_function<RetT(ArgsT...), OtherCapacity, OtherAlignment>&& other)
+        template<size_t OtherCapacity, size_t OtherAlignment, bool OtherCopyable>
+        void move(inplace_function<RetT(ArgsT...), OtherCapacity, OtherAlignment, OtherCopyable>&& other)
         {
             static_assert(OtherCapacity <= Capacity, "Can't squeeze larger inplace_function into a smaller one");
             static_assert(Alignment % OtherAlignment == 0, "Incompatible alignments");
@@ -274,7 +294,7 @@ namespace stdext
 
         using CompatibleFunctionPointer = RetT (*)(ArgsT...);
         using InvokeFctPtrType = RetT (*)(ArgsT..., const void* thisPtr);
-        using Operation = inplace_function_operation;
+        using Operation = typename inplace_function_operation<Copyable>::operations_enum;
         using ManagerFctPtrType = void (*)(void* thisPtr, const void* fromPtr, Operation);
 
         InvokeFctPtrType m_InvokeFctPtr;
@@ -317,7 +337,7 @@ namespace stdext
             new (buffer) FunctorT(ftor);
 
             // generate destructor, copy-constructor and move-constructor
-            m_ManagerFctPtr = &manage<FunctorT>;
+            m_ManagerFctPtr = &manage_function<FunctorT, Copyable>::call;
 
             // generate entry call
             m_InvokeFctPtr = &invoke<FunctorT>;
@@ -338,7 +358,7 @@ namespace stdext
             new (buffer) FunctorT(std::move(ftor));
 
             // generate destructor, copy-constructor and move-constructor
-            m_ManagerFctPtr = &manage<FunctorT>;
+            m_ManagerFctPtr = &manage_function<FunctorT, Copyable>::call;
 
             // generate entry call
             m_InvokeFctPtr = &invoke<FunctorT>;
@@ -351,35 +371,43 @@ namespace stdext
             return (*functor)(std::forward<ArgsT>(args)...);
         }
 
-        template<typename FunctorT>
-        static void manage(void* dataPtr, const void* fromPtr, Operation op)
+        template<typename FunctorT, bool SupportsCopying>
+        struct manage_function
         {
-            FunctorT* thisFunctor = reinterpret_cast<FunctorT*>(dataPtr);
-            switch (op)
+            static void call(void* dataPtr, const void* fromPtr, Operation op)
             {
-            case Operation::Destroy:
-                thisFunctor->~FunctorT();
-                break;
-            case Operation::Copy:
-            {
-                if constexpr (std::is_copy_constructible<FunctorT>::value)
+                FunctorT* thisFunctor = reinterpret_cast<FunctorT*>(dataPtr);
+                switch (op)
                 {
+                case Operation::Destroy:
+                    thisFunctor->~FunctorT();
+                    break;
+                case Operation::Move:
+                {
+                    FunctorT* source = (FunctorT*)fromPtr;
+                    new (thisFunctor) FunctorT(std::move(*source));
+                    break;
+                }
+                }
+            }
+        };
+
+        template<typename FunctorT>
+        struct manage_function<FunctorT, true>
+        {
+            static void call(void* dataPtr, const void* fromPtr, Operation op)
+            {
+                if (op == Operation::Copy)
+                {
+                    FunctorT* thisFunctor = reinterpret_cast<FunctorT*>(dataPtr);
                     const FunctorT* source = (const FunctorT*)const_cast<void*>(fromPtr);
                     new (thisFunctor) FunctorT(*source);
                 }
                 else
                 {
-                    throw std::runtime_error("Cannot copy non-copyable inplace function.");
+                    manage_function<FunctorT, false>::call(dataPtr, fromPtr, op);
                 }
-                break;
             }
-            case Operation::Move:
-            {
-                FunctorT* source = (FunctorT*)fromPtr;
-                new (thisFunctor) FunctorT(std::move(*source));
-                break;
-            }
-            }
-        }
+        };
     };
 }

@@ -318,9 +318,10 @@ namespace arcana
         template<typename ResultT, typename ErrorT, size_t WorkSize>
         struct task_payload_with_work : public task_payload_with_return<ResultT, ErrorT>
         {
-            stdext::inplace_function<basic_expected<ResultT, ErrorT>(base_task_payload*), WorkSize> Work;
+            using WorkT = stdext::inplace_function<basic_expected<ResultT, ErrorT>(base_task_payload*), WorkSize, alignof(std::max_align_t), false>;
+            WorkT Work;
 
-            task_payload_with_work(stdext::inplace_function<basic_expected<ResultT, ErrorT>(base_task_payload*), WorkSize> work)
+            task_payload_with_work(WorkT work)
                 : task_payload_with_return<ResultT, ErrorT>{ &do_work }
                 , Work{ std::move(work) }
             {}
