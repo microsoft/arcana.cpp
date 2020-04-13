@@ -379,15 +379,17 @@ namespace stdext
                 FunctorT* thisFunctor = reinterpret_cast<FunctorT*>(dataPtr);
                 switch (op)
                 {
-                case Operation::Destroy:
-                    thisFunctor->~FunctorT();
-                    break;
-                case Operation::Move:
-                {
-                    FunctorT* source = (FunctorT*)fromPtr;
-                    new (thisFunctor) FunctorT(std::move(*source));
-                    break;
-                }
+                    case Operation::Destroy:
+                    {
+                        thisFunctor->~FunctorT();
+                        break;
+                    }
+                    case Operation::Move:
+                    {
+                        FunctorT* source = (FunctorT*)fromPtr;
+                        new (thisFunctor) FunctorT(std::move(*source));
+                        break;
+                    }
                 }
             }
         };
