@@ -17,6 +17,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)arcana\containers\sorted_vector.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)arcana\containers\ticketed_collection.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)arcana\containers\unordered_bimap.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)arcana\containers\weak_table.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)arcana\experimental\array.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)arcana\functional\inplace_function.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)arcana\math.h" />
