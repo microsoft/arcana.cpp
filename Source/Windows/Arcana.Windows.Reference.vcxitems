@@ -23,7 +23,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="$(ArcanaDirectory)Arcana.UWP.vcxproj" Condition="'$(ConfigurationType)' == 'DynamicLibrary' Or '$(ConfigurationType)' == 'Application'">
+    <ProjectReference Include="$(ArcanaDirectory)Arcana.Windows.vcxproj" Condition="'$(ConfigurationType)' == 'DynamicLibrary' Or '$(ConfigurationType)' == 'Application'">
       <Project>{e4c54c47-397b-4d8e-9488-99d79a29ab38}</Project>
     </ProjectReference>
   </ItemGroup>

@@ -390,4 +390,5 @@ namespace arcana
         return scheduler_awaiter{ scheduler };
     }
 }
+
 #endif
