@@ -6,7 +6,7 @@
 
 #ifdef __cpp_coroutines
 
-#include <assert.h>
+#include <cassert>
 
 #include <arcana/threading/task.h>
 #include <experimental/coroutine>

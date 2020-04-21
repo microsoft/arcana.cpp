@@ -3,7 +3,7 @@
 #include "arcana/containers/ticketed_collection.h"
 
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <atomic>
 #include <memory>
 #include <vector>

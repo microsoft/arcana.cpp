@@ -7,7 +7,7 @@
 #include "arcana/type_traits.h"
 #include "arcana/containers/unordered_bimap.h"
 #include <winrt/base.h>
-#include <assert.h>
+#include <cassert>
 #include <future>
 #include <shared_mutex>
 #include <system_error>

@@ -3,7 +3,7 @@
 #include <set>
 #include <typeinfo>
 #include <vector>
-#include <assert.h>
+#include <cassert>
 
 #include <numeric>
 #include <cmath>
