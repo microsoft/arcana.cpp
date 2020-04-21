@@ -390,6 +390,10 @@ namespace stdext
                         new (thisFunctor) FunctorT(std::move(*source));
                         break;
                     }
+                    default:
+                    {
+                        assert(false && "Unexpected operation");
+                    }
                 }
             }
         };
