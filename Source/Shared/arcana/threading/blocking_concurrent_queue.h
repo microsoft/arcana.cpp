@@ -5,6 +5,7 @@
 #include <atomic>
 #include <mutex>
 #include <queue>
+#include <condition_variable>
 
 namespace arcana
 {
