@@ -304,7 +304,7 @@ namespace arcana
     {
         task_completion_source<void, ErrorT> result;
         result.complete();
-        return std::move(result);
+        return result;
     }
 
     template<typename ResultT, typename ErrorT>
@@ -312,7 +312,7 @@ namespace arcana
     {
         task_completion_source<ResultT, std::error_code> result;
         result.complete(make_unexpected(make_error_code(error)));
-        return std::move(result);
+        return result;
     }
 
     template<typename ResultT>
@@ -320,7 +320,7 @@ namespace arcana
     {
         task_completion_source<ResultT, std::error_code> result;
         result.complete(make_unexpected(error));
-        return std::move(result);
+        return result;
     }
 
     template<typename ResultT>
@@ -328,7 +328,7 @@ namespace arcana
     {
         task_completion_source<ResultT, std::exception_ptr> result;
         result.complete(make_unexpected(error));
-        return std::move(result);
+        return result;
     }
 
     template<typename ErrorT>
@@ -381,7 +381,7 @@ namespace arcana
             });
         }
 
-        return std::move(result);
+        return result;
     }
 
     template<typename T, typename ErrorT>
@@ -441,7 +441,7 @@ namespace arcana
             });
         }
 
-        return std::move(result);
+        return result;
     }
 
     template<typename ErrorT, typename... ArgTs>
@@ -501,6 +501,6 @@ namespace arcana
                 return basic_expected<void, ErrorT>::make_valid();
             });
         });
-        return std::move(result);
+        return result;
     }
 }
