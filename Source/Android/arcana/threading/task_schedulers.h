@@ -114,7 +114,7 @@ namespace arcana
             }
         }
 
-        static int looper_callback(int fd, int events, void* data)
+        static int looper_callback(int fd, int /*events*/, void* /*data*/)
         {
             callback_t* raw_callback_ptr;
             if (read(fd, &raw_callback_ptr, sizeof(raw_callback_ptr)) == -1)
