@@ -296,7 +296,7 @@ namespace arcana
     {
         task_completion_source<typename as_expected<ResultT, ErrorT>::value_type, ErrorT> result;
         result.complete(std::forward<ResultT>(value));
-        return std::move(result);
+        return result;
     }
 
     template<typename ErrorT>
