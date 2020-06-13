@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include <CoreFoundation/CFRunLoop.h>
+
+#include <thread>
+
 namespace arcana
 {
     // NOTE: These task schedulers are for the arcana task system.
@@ -20,4 +24,42 @@ namespace arcana
             }
         } threadpool_scheduler{};
     }
+
+    class run_loop_scheduler final
+    {
+    public:
+        explicit run_loop_scheduler(CFRunLoopRef runLoop)
+            : m_runLoop{ runLoop }
+        {
+            CFRetain(m_runLoop);
+        }
+
+        ~run_loop_scheduler()
+        {
+            CFRelease(m_runLoop);
+        }
+
+        template<typename CallableT>
+        void operator()(CallableT&& callable) const
+        {
+            CallableT _callable{ std::forward<CallableT>(callable) };
+            CFRunLoopPerformBlock(m_runLoop, kCFRunLoopDefaultMode, ^{
+                _callable();
+            });
+        }
+
+        static run_loop_scheduler get_for_current_thread()
+        {
+            CFRunLoopRef runLoop = CFRunLoopGetCurrent();
+            if (runLoop == nullptr)
+            {
+                throw std::runtime_error("No run loop associated with the current thread");
+            }
+
+            return run_loop_scheduler{ std::move(runLoop) };
+        }
+
+    private:
+        CFRunLoopRef m_runLoop{};
+    };
 }
