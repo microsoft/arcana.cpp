@@ -43,9 +43,12 @@ namespace arcana
         void operator()(CallableT&& callable) const
         {
             CallableT _callable{ std::forward<CallableT>(callable) };
-            CFRunLoopPerformBlock(m_runLoop, kCFRunLoopDefaultMode, ^{
+            CFRunLoopPerformBlock(m_runLoop, kCFRunLoopCommonModes, ^{
                 _callable();
             });
+            
+            // In case the run loop is idle, we need to wake it up and drain the queue
+            CFRunLoopWakeUp(m_runLoop);
         }
 
         static run_loop_scheduler get_for_current_thread()
