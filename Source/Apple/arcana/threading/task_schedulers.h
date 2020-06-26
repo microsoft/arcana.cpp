@@ -46,6 +46,8 @@ namespace arcana
             CFRunLoopPerformBlock(m_runLoop, kCFRunLoopCommonModes, ^{
                 _callable();
             });
+            
+            // In case the run loop is idle, we need to wake it up and drain the queue
             CFRunLoopWakeUp(m_runLoop);
         }
 
