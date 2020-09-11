@@ -23,7 +23,8 @@ set(SOURCES ${SOURCES}
     "Source/Shared/arcana/containers/ticketed_collection.h"
     "Source/Shared/arcana/containers/unique_vector.h"
     "Source/Shared/arcana/containers/unordered_bimap.h"
-    "Source/Shared/arcana/containers/weak_table.h")
+    "Source/Shared/arcana/containers/weak_table.h"
+    "Source/Shared/arcana/containers/lazy.h")
 
 # experimental
 set(SOURCES ${SOURCES}
