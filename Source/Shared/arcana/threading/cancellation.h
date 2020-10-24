@@ -129,9 +129,24 @@ namespace arcana
         std::atomic<bool> m_cancellationRequested{ false };
     };
 
+    namespace internal::cancellation_impl
+    {
+        template <class T>
+        class no_destroy
+        {
+            alignas(T) unsigned char data_[sizeof(T)];
+        public:
+            template <class... Ts> no_destroy(Ts&&... ts)
+            { new (data_) T(std::forward<Ts>(ts)...); }
+
+            T &get() { return *reinterpret_cast<T *>(data_); }
+        };
+
+        inline no_destroy<cancellation_source> none{};
+    }
+
     inline cancellation& cancellation::none()
     {
-        static cancellation_source n{};
-        return n;
+        return internal::cancellation_impl::none.get();
     }
 }
