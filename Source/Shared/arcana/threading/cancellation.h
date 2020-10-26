@@ -129,17 +129,27 @@ namespace arcana
         std::atomic<bool> m_cancellationRequested{ false };
     };
 
-    namespace internal::cancellation_impl
+    namespace internal::no_destroy_cancellation
     {
+        // To address a problem with static globals recognized as the same as in a 
+        // standards proposal, we adopt a workaround described in the proposal.
+        // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p1247r0.html
         template <class T>
         class no_destroy
         {
             alignas(T) unsigned char data_[sizeof(T)];
-        public:
-            template <class... Ts> no_destroy(Ts&&... ts)
-            { new (data_) T(std::forward<Ts>(ts)...); }
 
-            T &get() { return *reinterpret_cast<T *>(data_); }
+        public:
+            template <class... Ts>
+            no_destroy(Ts&&... ts)
+            {
+                new (data_)T(std::forward<Ts>(ts)...);
+            }
+
+            T &get()
+            {
+                return *reinterpret_cast<T *>(data_);
+            }
         };
 
         inline no_destroy<cancellation_source> none{};
@@ -147,6 +157,6 @@ namespace arcana
 
     inline cancellation& cancellation::none()
     {
-        return internal::cancellation_impl::none.get();
+        return internal::no_destroy_cancellation::none.get();
     }
 }
