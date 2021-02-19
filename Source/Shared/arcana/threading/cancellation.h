@@ -58,7 +58,7 @@ namespace arcana
         cancellation() = default;
         cancellation& operator=(const cancellation&) = delete;
 
-        ~cancellation()
+        virtual ~cancellation()
         {
             assert(m_listeners.empty() && "you're destroying the listener collection and you still have listeners");
         }
