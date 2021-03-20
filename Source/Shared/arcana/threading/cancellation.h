@@ -13,17 +13,81 @@
 
 namespace arcana
 {
+    namespace internal
+    {
+        class cancellation_impl
+        {
+            using collection = ticketed_collection<std::function<void()>>;
+
+        public:
+            using ticket = collection::ticket;
+            using ticket_scope = collection::ticket_scope;
+
+            template<typename CallableT>
+            ticket add_listener(CallableT&& callback, std::function<void()>& copied)
+            {
+                std::lock_guard<std::mutex> guard{ m_mutex };
+
+                if (m_cancelled)
+                {
+                    copied = std::forward<CallableT>(callback);
+                    return m_listeners.insert(copied, m_mutex);
+                }
+                else
+                {
+                    return m_listeners.insert(std::forward<CallableT>(callback), m_mutex);
+                }
+            }
+
+            void cancel()
+            {
+                if (m_cancelled.exchange(true))
+                {
+                    return;
+                }
+
+                std::vector<std::function<void()>> listeners;
+                {
+                    std::lock_guard<std::mutex> guard{ m_mutex };
+
+                    listeners.reserve(listeners.size());
+                    std::copy(listeners.begin(), listeners.end(), std::back_inserter(listeners));
+                }
+
+                // We want to signal cancellation in reverse order
+                // so that if a parent function adds a listener
+                // then a child function does the same, the child
+                // cancellation runs first. This avoids ownership
+                // semantic issues.
+                for(auto itr = listeners.rbegin(); itr != listeners.rend(); ++itr)
+                    (*itr)();
+            }
+
+            bool cancelled() const
+            {
+                return m_cancelled;
+            }
+        
+        private:
+            std::atomic_bool m_cancelled = false;
+            std::mutex m_mutex;
+            collection m_listeners;
+        };
+    }
+
     class cancellation
     {
-        using collection = ticketed_collection<std::function<void>>;
-
     public:
-        using ticket = collection::ticket;
-        using ticket_scope = collection::ticket_scope;
+        using ticket = internal::cancellation_impl::ticket;
+        using ticket_scope = internal::cancellation_impl::ticket_scope;
 
-        using ptr = std::shared_ptr<cancellation>;
+        bool cancelled() const
+        {
+            if (this == &none())
+                return false;
 
-        virtual bool cancelled() const = 0;
+            return m_impl->cancelled();
+        }
 
         void throw_if_cancellation_requested()
         {
@@ -44,7 +108,7 @@ namespace arcana
                 return ticket{ [] {} };
 
             std::function<void()> copied;
-            ticket result{ internal_add_listener(callback, copied) };
+            ticket result{ m_impl->add_listener(callback, copied) };
 
             if (copied)
                 copied();
@@ -54,79 +118,36 @@ namespace arcana
 
         static cancellation& none();
 
-    protected:
-        cancellation() = default;
-        cancellation& operator=(const cancellation&) = delete;
-
-        virtual ~cancellation()
-        {
-            assert(m_listeners.empty() && "you're destroying the listener collection and you still have listeners");
-        }
-
-        template<typename CallableT>
-        ticket internal_add_listener(CallableT&& callback, std::function<void()>& copied)
-        {
-            std::lock_guard<std::mutex> guard{ m_mutex };
-
-            if (m_signaled)
-            {
-                copied = std::forward<CallableT>(callback);
-                return m_listeners.insert(copied, m_mutex);
-            }
-            else
-            {
-                return m_listeners.insert(std::forward<CallableT>(callback), m_mutex);
-            }
-        }
-
-        void signal_cancelled()
-        {
-            std::vector<std::function<void()>> listeners;
-
-            {
-                std::lock_guard<std::mutex> guard{ m_mutex };
-
-                listeners.reserve(m_listeners.size());
-                std::copy(m_listeners.begin(), m_listeners.end(), std::back_inserter(listeners));
-
-                m_signaled = true;
-            }
-
-            // We want to signal cancellation in reverse order
-            // so that if a parent function adds a listener
-            // then a child function does the same, the child
-            // cancellation runs first. This avoids ownership
-            // semantic issues.
-            for(auto itr = listeners.rbegin(); itr != listeners.rend(); ++itr)
-                (*itr)();
-        }
-
     private:
-        mutable std::mutex m_mutex;
-        ticketed_collection<std::function<void()>> m_listeners;
-        bool m_signaled = false;
+        friend class cancellation_source;
+        std::shared_ptr<internal::cancellation_impl> m_impl;
+
+        cancellation(std::shared_ptr<internal::cancellation_impl> ptr)
+            : m_impl{ std::move(ptr) }
+        {
+        }
     };
 
     class cancellation_source : public cancellation
     {
     public:
-        using ptr = std::shared_ptr<cancellation_source>;
-
-        virtual bool cancelled() const override
+        cancellation_source()
+            : cancellation{ std::make_unique<internal::cancellation_impl>() }
         {
-            return m_cancellationRequested;
+        }
+
+        cancellation_source(const cancellation_source&) = delete;
+        cancellation_source(cancellation_source&&) = delete;
+
+        operator cancellation()
+        {
+            return { m_impl };
         }
 
         void cancel()
         {
-            if (m_cancellationRequested.exchange(true) == false)
-            {
-                signal_cancelled();
-            }
+            m_impl->cancel();
         }
-
-    private:
-        std::atomic<bool> m_cancellationRequested{ false };
     };
 
     namespace internal::no_destroy_cancellation
