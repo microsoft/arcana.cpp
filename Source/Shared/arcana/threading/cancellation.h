@@ -2,11 +2,14 @@
 
 #include "arcana/containers/ticketed_collection.h"
 
+#include <gsl/gsl>
+
 #include <algorithm>
 #include <atomic>
 #include <cassert>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace arcana
@@ -24,7 +27,7 @@ namespace arcana
             template<typename CallableT>
             ticket add_listener(CallableT&& callback, std::function<void()>& copied)
             {
-                std::lock_guard<std::mutex> guard{ m_mutex };
+                std::scoped_lock<std::mutex> lock{ m_mutex };
 
                 if (m_cancelled)
                 {
@@ -46,7 +49,8 @@ namespace arcana
 
                 std::vector<std::function<void()>> listeners;
                 {
-                    std::lock_guard<std::mutex> guard{ m_mutex };
+                    std::unique_lock lock{ m_mutex };
+                    m_condition.wait(lock, [this] { return m_pins == 0; });
 
                     listeners.reserve(listeners.size());
                     std::copy(listeners.begin(), listeners.end(), std::back_inserter(listeners));
@@ -65,11 +69,35 @@ namespace arcana
             {
                 return m_cancelled;
             }
-        
+
+            auto pin()
+            {
+                std::scoped_lock lock{ m_mutex };
+                if (m_cancelled)
+                {
+                    return std::optional<gsl::final_action<std::function<void()>>>{};
+                }
+                else
+                {
+                    ++m_pins;
+                    return std::optional{gsl::finally(std::function<void()>{[this]
+                    {
+                        {
+                            std::scoped_lock lock{ m_mutex };
+                            --m_pins;
+                        }
+                        m_condition.notify_all();
+                    }})};
+                }
+            }
+
         private:
-            std::atomic_bool m_cancelled = false;
+            std::atomic_bool m_cancelled{ false };
             std::mutex m_mutex;
             collection m_listeners;
+
+            size_t m_pins{ 0 };
+            std::condition_variable m_condition;
         };
     }
 
@@ -112,6 +140,11 @@ namespace arcana
                 copied();
 
             return result;
+        }
+
+        auto pin()
+        {
+            return m_impl->pin();
         }
 
         static cancellation& none();
