@@ -111,9 +111,13 @@ namespace arcana
                     })
             ) };
 
-            m_payload->create_continuation([&scheduler](auto&& c)
+            m_payload->create_continuation([&scheduler, token](auto&& c) mutable
             {
-                scheduler(std::forward<decltype(c)>(c));
+                auto cancel_pin = token.pin();
+                if (cancel_pin)
+                {
+                    scheduler(std::forward<decltype(c)>(c));
+                }
             }, m_payload, std::move(factory.to_run.m_payload));
 
             return factory.to_return;

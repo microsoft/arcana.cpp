@@ -43,7 +43,7 @@ namespace arcana
             struct continuation_payload
             {
                 using queue_function = stdext::inplace_function<void(), 2 * sizeof(std::shared_ptr<void>)>;
-                using scheduling_function = stdext::inplace_function<void(queue_function&&), sizeof(intptr_t)>;
+                using scheduling_function = stdext::inplace_function<void(queue_function&&), sizeof(intptr_t) + sizeof(cancellation)>;
 
                 explicit operator bool() const noexcept
                 {
@@ -513,9 +513,10 @@ namespace arcana
                 {
                     // Because the callable supports an expected<> input parameter
                     // we need to call it if the previous task fails. But if the task doesn't
-                    // care about cancellation, and it's cancellation token is set then we
+                    // care about cancellation, and its cancellation token is set then we
                     // can just return the cancellation result directly.
-                    if (!input.has_error() && cancel.cancelled())
+                    auto cancel_pin = cancel.pin();
+                    if (!input.has_error() && !cancel_pin)
                         return typename traits::expected_return_type{ make_unexpected(std::errc::operation_canceled) };
 
                     return output_wrapper<typename traits::return_type, typename traits::error_propagation_type>::invoke(callable, input);
@@ -538,7 +539,8 @@ namespace arcana
                     if (input.has_error())
                         return typename traits::expected_return_type{ make_unexpected(input.error()) };
 
-                    if (cancel.cancelled())
+                    auto cancel_pin = cancel.pin();
+                    if (!cancel_pin)
                         return typename traits::expected_return_type{ make_unexpected(std::errc::operation_canceled) };
 
                     return output_wrapper<typename traits::return_type, typename traits::error_propagation_type>::invoke(callable, input.value());
@@ -560,8 +562,9 @@ namespace arcana
                     // it if the previous task error'd out or its cancellation token is set.
                     if (input.has_error())
                         return typename traits::expected_return_type{ make_unexpected(input.error()) };
-
-                    if (cancel.cancelled())
+                    
+                    auto cancel_pin = cancel.pin();
+                    if (!cancel_pin)
                         return typename traits::expected_return_type{ make_unexpected(std::errc::operation_canceled) };
 
                     return output_wrapper<typename traits::return_type, typename traits::error_propagation_type>::invoke(callable);
