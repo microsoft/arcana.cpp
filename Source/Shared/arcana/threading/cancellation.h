@@ -3,12 +3,10 @@
 #include "arcana/containers/ticketed_collection.h"
 
 #include <algorithm>
-#include <cassert>
 #include <atomic>
-#include <memory>
-#include <vector>
-
+#include <cassert>
 #include <functional>
+#include <memory>
 #include <vector>
 
 namespace arcana

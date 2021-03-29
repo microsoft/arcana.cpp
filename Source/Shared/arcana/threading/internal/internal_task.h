@@ -509,7 +509,7 @@ namespace arcana
             {
                 using traits = callable_traits<CallableT, InputT>;
 
-                return[callable = std::forward<CallableT>(callable), &cancel](const basic_expected<InputT, InputErrorT>& input) mutable noexcept
+                return[callable = std::forward<CallableT>(callable), cancel](const basic_expected<InputT, InputErrorT>& input) mutable noexcept
                 {
                     // Because the callable supports an expected<> input parameter
                     // we need to call it if the previous task fails. But if the task doesn't
@@ -531,7 +531,7 @@ namespace arcana
             {
                 using traits = callable_traits<CallableT, InputT>;
 
-                return[callable = std::forward<CallableT>(callable), &cancel](const basic_expected<InputT, InputErrorT>& input) mutable noexcept
+                return[callable = std::forward<CallableT>(callable), cancel](const basic_expected<InputT, InputErrorT>& input) mutable noexcept
                 {
                     // Here the callable doesn't handle expected<> which means we don't have to invoke
                     // it if the previous task error'd out or its cancellation token is set.
@@ -554,7 +554,7 @@ namespace arcana
             {
                 using traits = callable_traits<CallableT, void>;
 
-                return[callable = std::forward<CallableT>(callable), &cancel](const basic_expected<void, InputErrorT>& input) mutable noexcept
+                return[callable = std::forward<CallableT>(callable), cancel](const basic_expected<void, InputErrorT>& input) mutable noexcept
                 {
                     // Here the callable doesn't handle expected<> which means we don't have to invoke
                     // it if the previous task error'd out or its cancellation token is set.
