@@ -284,10 +284,14 @@ namespace arcana
                 })
         ) };
 
-        scheduler([to_run = std::move(factory.to_run)]
+        auto cancel_pin = token.pin();
+        if (cancel_pin)
         {
-            to_run.m_payload->run(nullptr);
-        });
+            scheduler([to_run = std::move(factory.to_run)]
+            {
+                to_run.m_payload->run(nullptr);
+            });
+        }
 
         return factory.to_return;
     }
