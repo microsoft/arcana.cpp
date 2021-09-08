@@ -163,7 +163,7 @@ namespace arcana
     {
     public:
         cancellation_source()
-            : cancellation{ std::make_unique<internal::cancellation_impl>() }
+            : cancellation{ std::make_shared<internal::cancellation_impl>() }
         {
         }
 
