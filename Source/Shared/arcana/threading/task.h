@@ -118,6 +118,17 @@ namespace arcana
                 {
                     scheduler(std::forward<decltype(c)>(c));
                 }
+                else
+                {
+                    // TODO: We need to cancel the task from here, don't we?
+                    // In this case, the task will never be scheduled (because the cancellation token
+                    // guaranteeing the safety of the schedulder has been cancelled), but it still needs
+                    // to be _completed_ despite never being _scheduled_ because other non-cancelled 
+                    // things down the task chain may be waiting on its completion. For this reason, I
+                    // think we may need a cancellation completion mechanism which can cancel the task on
+                    // any thread, essentially falling back to an inline scheduler that doesn't execute
+                    // the task itself but merely cancels it and communicates that to all continuations.
+                }
             }, m_payload, std::move(factory.to_run.m_payload));
 
             return factory.to_return;
@@ -275,6 +286,10 @@ namespace arcana
         using traits = internal::callable_traits<CallableT, void>;
         using wrapper = internal::input_output_wrapper<void, typename traits::error_propagation_type, false>;
 
+        auto cancel_pin = token.pin();
+        if (!cancel_pin)
+            throw; // TODO: Return a cancelled task instead.
+
         auto factory{ internal::make_task_factory(
             internal::make_work_payload<typename traits::expected_return_type::value_type, typename traits::error_propagation_type>(
                 [callable = wrapper::wrap_callable(std::forward<CallableT>(callable), token)]
@@ -284,14 +299,10 @@ namespace arcana
                 })
         ) };
 
-        auto cancel_pin = token.pin();
-        if (cancel_pin)
+        scheduler([to_run = std::move(factory.to_run)]
         {
-            scheduler([to_run = std::move(factory.to_run)]
-            {
-                to_run.m_payload->run(nullptr);
-            });
-        }
+            to_run.m_payload->run(nullptr);
+        });
 
         return factory.to_return;
     }
