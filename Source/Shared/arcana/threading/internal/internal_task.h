@@ -212,7 +212,7 @@ namespace arcana
                 {
                     for (auto& continuation : continuations)
                         continuation.run();
-                    m_continued = true;
+                    m_continued = continuations.size() > 0;
                 }
             }
 
