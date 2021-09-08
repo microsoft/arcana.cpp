@@ -212,6 +212,7 @@ namespace arcana
                 {
                     for (auto& continuation : continuations)
                         continuation.run();
+                    m_continued = true;
                 }
             }
 
@@ -219,8 +220,10 @@ namespace arcana
             {
                 std::variant<continuation_payload, std::vector<continuation_payload>> continuation = cannibalize(nullptr);
 
-                for (auto& callable : continuation_span(continuation))
+                auto continuations = continuation_span(continuation);
+                for (auto& callable : continuations)
                     callable.run();
+                m_continued = continuations.size() > 0;
             }
 
             void internal_add_continuations(continuation_payload&& continuation)
@@ -267,6 +270,7 @@ namespace arcana
         protected:
             // TODO make sure we don't have huge gaps in the object layout
             std::mutex m_mutex;
+            bool m_continued = false;
 
         private:
             bool m_completed = false;
@@ -291,7 +295,7 @@ namespace arcana
         struct task_payload_with_return : base_task_payload
         {
             std::optional<basic_expected<ResultT, ErrorT>> Result;
-
+            
             task_payload_with_return()
                 : base_task_payload{ nullptr }
             {}
@@ -312,6 +316,11 @@ namespace arcana
                 Result = result;
 
                 base_task_payload::complete();
+            }
+
+            std::optional<ErrorT> get_unhandled_error() const
+            {
+                return !m_continued && Result && Result->has_error() ? Result->error() : std::optional<ErrorT>{};
             }
         };
 
@@ -338,7 +347,20 @@ namespace arcana
         template<typename ResultT, typename ErrorT, typename CallableT>
         std::shared_ptr<task_payload_with_return<ResultT, ErrorT>> make_work_payload(CallableT&& callable)
         {
-            return std::make_shared<task_payload_with_work<ResultT, ErrorT, sizeof(callable)>>(std::forward<CallableT>(callable));
+            using PayloadT = task_payload_with_work<ResultT, ErrorT, sizeof(callable)>;
+            struct DeleterT
+            {
+                void operator()(PayloadT* ptr)
+                {
+                    if (auto error = ptr->get_unhandled_error())
+                    {
+                        if constexpr (std::is_same<std::exception_ptr, ErrorT>::value)
+                            std::rethrow_exception(*error);
+                    }
+                    delete ptr;
+                }
+            };
+            return std::shared_ptr<PayloadT>(new PayloadT(std::forward<CallableT>(callable)), DeleterT{});
         }
 
         //
