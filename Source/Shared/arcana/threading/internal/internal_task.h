@@ -68,12 +68,21 @@ namespace arcana
 
                 void run()
                 {
-                    assert(parent.lock() && "parent of a continuation can't be null");
-
-                    schedulingFunction([shared = parent.lock(), continuation = std::move(continuation)]
+                    auto shared = parent.lock();
+                    if (!shared)
                     {
-                        assert(shared.get() && "parent of a continuation can't be null");
+                        // It is possible for the entire task which requested work to be done to
+                        // be disposed before the work is finished. This can occur, for example,
+                        // if the parent task was created from a completion source which survived
+                        // and was completed after the task on which the continuations were added
+                        // was discarded. If this happens, it means no reference to the work 
+                        // remains, and all we can do here is assume that resources have been 
+                        // cleaned up and allow the work to disappear.
+                        return;
+                    }
 
+                    schedulingFunction([shared = std::move(shared), continuation = std::move(continuation)]
+                    {
                         continuation->run(shared.get());
                     });
                 }
