@@ -43,7 +43,7 @@ namespace arcana
             struct continuation_payload
             {
                 using queue_function = stdext::inplace_function<void(), 2 * sizeof(std::shared_ptr<void>)>;
-                using scheduling_function = stdext::inplace_function<void(queue_function&&), sizeof(intptr_t) + sizeof(cancellation)>;
+                using scheduling_function = stdext::inplace_function<void(queue_function&&), sizeof(intptr_t) + sizeof(intptr_t) + sizeof(cancellation)>;
 
                 explicit operator bool() const noexcept
                 {

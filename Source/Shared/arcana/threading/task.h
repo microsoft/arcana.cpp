@@ -111,7 +111,7 @@ namespace arcana
                     })
             ) };
 
-            m_payload->create_continuation([&scheduler, token](auto&& c) mutable
+            m_payload->create_continuation([this, &scheduler, token](auto&& c) mutable
             {
                 auto cancel_pin = token.pin();
                 if (cancel_pin)
@@ -120,14 +120,8 @@ namespace arcana
                 }
                 else
                 {
-                    // TODO: We need to cancel the task from here, don't we?
-                    // In this case, the task will never be scheduled (because the cancellation token
-                    // guaranteeing the safety of the schedulder has been cancelled), but it still needs
-                    // to be _completed_ despite never being _scheduled_ because other non-cancelled 
-                    // things down the task chain may be waiting on its completion. For this reason, I
-                    // think we may need a cancellation completion mechanism which can cancel the task on
-                    // any thread, essentially falling back to an inline scheduler that doesn't execute
-                    // the task itself but merely cancels it and communicates that to all continuations.
+                    if (!m_payload->completed())
+                        m_payload->complete({ make_unexpected(std::errc::operation_canceled) });
                 }
             }, m_payload, std::move(factory.to_run.m_payload));
 
@@ -287,8 +281,6 @@ namespace arcana
         using wrapper = internal::input_output_wrapper<void, typename traits::error_propagation_type, false>;
 
         auto cancel_pin = token.pin();
-        if (!cancel_pin)
-            throw; // TODO: Return a cancelled task instead.
 
         auto factory{ internal::make_task_factory(
             internal::make_work_payload<typename traits::expected_return_type::value_type, typename traits::error_propagation_type>(
@@ -299,10 +291,17 @@ namespace arcana
                 })
         ) };
 
-        scheduler([to_run = std::move(factory.to_run)]
+        if (cancel_pin)
         {
-            to_run.m_payload->run(nullptr);
-        });
+            scheduler([to_run = std::move(factory.to_run)]
+            {
+                to_run.m_payload->run(nullptr);
+            });
+        }
+        else
+        {
+            factory.to_run.m_payload->complete({ make_unexpected(std::errc::operation_canceled) });
+        }
 
         return factory.to_return;
     }
