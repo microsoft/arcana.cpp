@@ -348,19 +348,14 @@ namespace arcana
         std::shared_ptr<task_payload_with_return<ResultT, ErrorT>> make_work_payload(CallableT&& callable)
         {
             using PayloadT = task_payload_with_work<ResultT, ErrorT, sizeof(callable)>;
-            struct DeleterT
-            {
-                void operator()(PayloadT* ptr)
+            return std::shared_ptr<PayloadT>(new PayloadT(std::forward<CallableT>(callable)), [](PayloadT* ptr) mutable {
+                if (auto error = ptr->get_unhandled_error())
                 {
-                    if (auto error = ptr->get_unhandled_error())
-                    {
-                        if constexpr (std::is_same<std::exception_ptr, ErrorT>::value)
-                            std::rethrow_exception(*error);
-                    }
-                    delete ptr;
+                    if constexpr (std::is_same<std::exception_ptr, ErrorT>::value)
+                        std::rethrow_exception(*error);
                 }
-            };
-            return std::shared_ptr<PayloadT>(new PayloadT(std::forward<CallableT>(callable)), DeleterT{});
+                delete ptr;
+            });
         }
 
         //
