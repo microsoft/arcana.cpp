@@ -20,7 +20,7 @@ namespace arcana
         {
         }
 
-        trace_region(trace_region&& other)
+        trace_region(trace_region&&)
         {
         }
 
