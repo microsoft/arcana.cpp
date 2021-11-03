@@ -6,22 +6,23 @@
 
 #include <os/signpost.h>
 
+#define SIGNPOST_NAME "trace_region"
+
 namespace arcana
 {
     class trace_region final
     {
     public:
         trace_region() = delete;
-        trace_region& operator=(const trace_region&) = delete;
         trace_region(const trace_region&) = delete;
-        trace_region& operator=(trace_region&&) = delete;
+        trace_region& operator=(const trace_region&) = delete;
 
         trace_region(const char* name) :
             m_id{s_enabled ? os_signpost_id_generate(s_log) : OS_SIGNPOST_ID_NULL}
         {
             if (m_id != OS_SIGNPOST_ID_NULL)
             {
-                os_signpost_interval_begin(s_log, m_id, "trace_region", "%s", name);
+                os_signpost_interval_begin(s_log, m_id, SIGNPOST_NAME, "%s", name);
             }
         }
 
@@ -35,8 +36,21 @@ namespace arcana
         {
             if (m_id != OS_SIGNPOST_ID_NULL)
             {
-                os_signpost_interval_end(s_log, m_id, "trace_region");
+                os_signpost_interval_end(s_log, m_id, SIGNPOST_NAME);
             }
+        }
+
+        trace_region& operator=(trace_region&& other)
+        {
+            if (m_id != OS_SIGNPOST_ID_NULL)
+            {
+                os_signpost_interval_end(s_log, m_id, SIGNPOST_NAME);
+            }
+
+            m_id = other.m_id;
+            other.m_id = OS_SIGNPOST_ID_NULL;
+
+            return *this;
         }
 
         static void enable()
