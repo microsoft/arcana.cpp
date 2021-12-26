@@ -101,7 +101,7 @@ namespace arcana
         }
 
     private:
-        using callback_t = stdext::inplace_function<void(), WorkSize>;
+        using callback_t = stdext::inplace_function<void(), WorkSize, alignof(std::max_align_t), false>;
 
         void destroy()
         {
