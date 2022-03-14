@@ -15,7 +15,7 @@ namespace arcana
     class dispatcher
     {
     public:
-        using callback_t = stdext::inplace_function<void(), WorkSize>;
+        using callback_t = stdext::inplace_function<void(), WorkSize, alignof(std::max_align_t), false>;
         static constexpr size_t work_size = WorkSize;
 
         template<typename T>
