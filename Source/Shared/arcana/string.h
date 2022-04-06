@@ -49,14 +49,14 @@ namespace arcana
     {
         using is_transparent = std::true_type;
 
-        bool operator()(gsl::cstring_span<> a, gsl::cstring_span<> b) const
+        bool operator()(std::string_view a, std::string_view b) const
         {
-            return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
+            return a.compare(b);
         }
 
-        bool operator()(gsl::czstring_span<> a, gsl::czstring_span<> b) const
+        bool operator()(gsl::span<char> a, gsl::span<char> b) const
         {
-            return (*this)(a.as_string_span(), b.as_string_span());
+            return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
         }
 
         bool operator()(gsl::czstring a, gsl::czstring b) const
