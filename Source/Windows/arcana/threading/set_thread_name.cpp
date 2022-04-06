@@ -22,7 +22,7 @@ namespace arcana
         DWORD flags; // Reserved for future use, must be zero.
     } THREADNAME_INFO;
 #pragma pack(pop)
-    void set_thread_name(DWORD threadId, gsl::czstring<> threadName)
+    void set_thread_name(DWORD threadId, gsl::czstring threadName)
     {
         THREADNAME_INFO info;
         info.type = 0x1000;
