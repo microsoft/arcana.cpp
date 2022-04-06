@@ -242,7 +242,7 @@ namespace arcana
                 }
                 else if (!std::get<0>(m_continuation) && continuations.size() == 1)
                 {
-                    std::get<0>(m_continuation) = std::move(continuations.at(0));
+                    std::get<0>(m_continuation) = std::move(continuations[0]);
                 }
                 else
                 {

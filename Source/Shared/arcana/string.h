@@ -21,13 +21,13 @@ namespace std
 
 namespace arcana
 {
-    inline std::string utf16_to_utf8(gsl::cwzstring<> input)
+    inline std::string utf16_to_utf8(gsl::cwzstring input)
     {
         std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
         return converter.to_bytes(input);
     }
 
-    inline std::wstring utf8_to_utf16(gsl::czstring<> input)
+    inline std::wstring utf8_to_utf16(gsl::czstring input)
     {
         std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
         return converter.from_bytes(input);
@@ -59,7 +59,7 @@ namespace arcana
             return (*this)(a.as_string_span(), b.as_string_span());
         }
 
-        bool operator()(gsl::czstring<> a, gsl::czstring<> b) const
+        bool operator()(gsl::czstring a, gsl::czstring b) const
         {
             return strcmp(a, b) < 0;
         }
