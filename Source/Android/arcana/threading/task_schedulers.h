@@ -81,7 +81,7 @@ namespace arcana
         template<typename CallableT>
         void operator()(CallableT&& callable) const
         {
-            auto callback_ptr = std::make_unique<callback_t>([callable{ std::forward<CallableT>(callable) }]() { callable(); });
+            auto callback_ptr = std::make_unique<callback_t>([callable{ std::forward<CallableT>(callable) }]() mutable { callable(); });
             auto raw_callback_ptr = callback_ptr.release();
             if (write(m_fd[1], &raw_callback_ptr, sizeof(raw_callback_ptr)) == -1)
             {
@@ -101,7 +101,7 @@ namespace arcana
         }
 
     private:
-        using callback_t = stdext::inplace_function<void(), WorkSize>;
+        using callback_t = stdext::inplace_function<void(), WorkSize, alignof(std::max_align_t), false>;
 
         void destroy()
         {

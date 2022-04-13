@@ -9,5 +9,5 @@
 
 namespace arcana
 {
-    void set_thread_name(DWORD threadId, gsl::czstring<> threadName);
+    void set_thread_name(DWORD threadId, gsl::czstring threadName);
 }
