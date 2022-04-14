@@ -285,6 +285,8 @@ namespace arcana
         using traits = internal::callable_traits<CallableT, void>;
         using wrapper = internal::input_output_wrapper<void, typename traits::error_propagation_type, false>;
 
+        // The cancel pin functions like a scope guard, so we take it here in order
+        // to guard the entire method, including the creation of the factory.
         auto cancel_pin = token.pin();
 
         auto factory{ internal::make_task_factory(
