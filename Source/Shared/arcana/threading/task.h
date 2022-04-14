@@ -111,7 +111,7 @@ namespace arcana
                     })
             ) };
 
-            m_payload->create_continuation([this, &scheduler, token](auto&& c) mutable
+            m_payload->create_continuation([payload{m_payload.get()}, &scheduler, token](auto&& c) mutable
             {
                 auto cancel_pin = token.pin();
                 if (cancel_pin)
@@ -120,8 +120,13 @@ namespace arcana
                 }
                 else
                 {
-                    if (!m_payload->completed())
-                        m_payload->complete({ make_unexpected(std::errc::operation_canceled) });
+                    // By the time we get here, payload is actually owned by the lambda in c.
+                    // However, due to type erasure, the continuation_payload calling this scheduling
+                    // lambda no longer knows the type information needed to correctly complete
+                    // the payload, so it must be independently captured here so that it can be
+                    // correctly completed in the cancellation case.
+                    if (!payload->completed())
+                        payload->complete({ make_unexpected(std::errc::operation_canceled) });
                 }
             }, m_payload, std::move(factory.to_run.m_payload));
 

@@ -52,8 +52,8 @@ namespace arcana
                     std::unique_lock lock{ m_mutex };
                     m_condition.wait(lock, [this] { return m_pins == 0; });
 
-                    listeners.reserve(listeners.size());
-                    std::copy(listeners.begin(), listeners.end(), std::back_inserter(listeners));
+                    listeners.reserve(m_listeners.size());
+                    std::copy(m_listeners.begin(), m_listeners.end(), std::back_inserter(listeners));
                 }
 
                 // We want to signal cancellation in reverse order
@@ -61,7 +61,7 @@ namespace arcana
                 // then a child function does the same, the child
                 // cancellation runs first. This avoids ownership
                 // semantic issues.
-                for(auto itr = listeners.rbegin(); itr != listeners.rend(); ++itr)
+                for (auto itr = listeners.rbegin(); itr != listeners.rend(); ++itr)
                     (*itr)();
             }
 
