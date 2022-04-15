@@ -111,7 +111,7 @@ namespace arcana
                     })
             ) };
 
-            m_payload->create_continuation([payload{m_payload.get()}, &scheduler, token](auto&& c) mutable
+            m_payload->create_continuation([payload = m_payload.get(), &scheduler, token](auto&& c) mutable
             {
                 auto cancel_pin = token.pin();
                 if (cancel_pin)
@@ -126,7 +126,9 @@ namespace arcana
                     // the payload, so it must be independently captured here so that it can be
                     // correctly completed in the cancellation case.
                     if (!payload->completed())
+                    {
                         payload->complete({ make_unexpected(std::errc::operation_canceled) });
+                    }
                 }
             }, m_payload, std::move(factory.to_run.m_payload));
 
@@ -527,5 +529,16 @@ namespace arcana
             });
         });
         return result;
+    }
+
+    template<typename ErrorT>
+    arcana::task<void, ErrorT> make_cancellation_task(cancellation_source& cancel)
+    {
+        task_completion_source<void, ErrorT> source{};
+        auto ticket = cancel.add_listener([source]() mutable {
+            source.complete();
+        });
+        cancel.unsafe_cancel();
+        return source.as_task().then(inline_scheduler, cancellation::none(), [ticket{std::move(ticket)}]() {});
     }
 }
