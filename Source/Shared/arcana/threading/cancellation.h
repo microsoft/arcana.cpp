@@ -28,22 +28,17 @@ namespace arcana
             template<typename CallableT>
             ticket add_listener(CallableT&& callback, std::function<void()>& copied)
             {
-                std::scoped_lock<std::mutex> lock{ m_mutex };
+                return internal_add_listener(m_cancelStartedListeners, std::forward<CallableT>(callback), copied);
+            }
 
-                if (m_cancelFinished)
-                {
-                    copied = std::forward<CallableT>(callback);
-                    return m_listeners.insert(copied, m_mutex);
-                }
-                else
-                {
-                    return m_listeners.insert(std::forward<CallableT>(callback), m_mutex);
-                }
+            template<typename CallableT>
+            ticket add_cancellation_completed_listener(CallableT&& callback, std::function<void()>& copied)
+            {
+                return internal_add_listener(m_cancelFinishedListeners, std::forward<CallableT>(callback), copied);
             }
 
             void unsafe_cancel()
             {
-                bool finishCancellation = false;
                 {
                     std::scoped_lock lock{ m_mutex };
 
@@ -56,13 +51,18 @@ namespace arcana
 
                     if (m_pins == 0)
                     {
-                        finishCancellation = true;
+                        m_cancelFinished = true;
                     }
                 }
 
-                if (finishCancellation)
+                if (m_cancelStarted)
                 {
-                    finish_cancellation();
+                    signal_cancellation(m_cancelStartedListeners);
+                }
+
+                if (m_cancelFinished)
+                {
+                    signal_cancellation(m_cancelFinishedListeners);
                 }
             }
 
@@ -84,14 +84,14 @@ namespace arcana
                     ++m_pins;
                     return std::optional{gsl::finally(std::function<void()>{[this]
                     {
-                        bool finishCancellation = false;
+                        assert(!m_cancelFinished);
                         {
                             std::scoped_lock lock{ m_mutex };
-                            finishCancellation = --m_pins == 0 && m_cancelStarted;
+                            m_cancelFinished = --m_pins == 0 && m_cancelStarted;
                         }
-                        if (finishCancellation)
+                        if (m_cancelFinished)
                         {
-                            finish_cancellation();
+                            signal_cancellation(m_cancelFinishedListeners);
                         }
                     }})};
                 }
@@ -100,20 +100,19 @@ namespace arcana
         private:
             bool m_cancelStarted{ false };
             bool m_cancelFinished{ false };
+            collection m_cancelStartedListeners;
+            collection m_cancelFinishedListeners;
             mutable std::mutex m_mutex;
-            collection m_listeners;
 
             size_t m_pins{ 0 };
 
-            void finish_cancellation()
+            void signal_cancellation(collection& listeners)
             {
-                std::vector<std::function<void()>> listeners;
+                std::vector<std::function<void()>> listenersCopy;
                 {
                     std::scoped_lock lock{ m_mutex };
-                    assert(!m_cancelFinished);
-                    m_cancelFinished = true;
-                    listeners.reserve(m_listeners.size());
-                    std::copy(m_listeners.begin(), m_listeners.end(), std::back_inserter(listeners));
+                    listenersCopy.reserve(listeners.size());
+                    std::copy(listeners.begin(), listeners.end(), std::back_inserter(listenersCopy));
                 }
 
                 // We want to signal cancellation in reverse order
@@ -121,9 +120,25 @@ namespace arcana
                 // then a child function does the same, the child
                 // cancellation runs first. This avoids ownership
                 // semantic issues.
-                for (auto itr = listeners.rbegin(); itr != listeners.rend(); ++itr)
+                for (auto itr = listenersCopy.rbegin(); itr != listenersCopy.rend(); ++itr)
                 {
                     (*itr)();
+                }
+            }
+
+            template<typename CallableT>
+            ticket internal_add_listener(collection& listeners, CallableT&& callback, std::function<void()>& copied)
+            {
+                std::scoped_lock<std::mutex> lock{ m_mutex };
+
+                if (m_cancelFinished)
+                {
+                    copied = std::forward<CallableT>(callback);
+                    return listeners.insert(copied, m_mutex);
+                }
+                else
+                {
+                    return listeners.insert(std::forward<CallableT>(callback), m_mutex);
                 }
             }
         };
@@ -170,6 +185,21 @@ namespace arcana
             return result;
         }
 
+        template<typename CallableT>
+        ticket add_cancellation_completed_listener(CallableT&& callback)
+        {
+            if (this == &none())
+                return ticket{ [] {} };
+
+            std::function<void()> copied;
+            ticket result{ m_impl->add_cancellation_completed_listener(callback, copied) };
+
+            if (copied)
+                copied();
+
+            return result;
+        }
+
         auto pin()
         {
             return m_impl->pin();
@@ -203,20 +233,24 @@ namespace arcana
             return { m_impl };
         }
 
-        void unsafe_cancel()
+        void cancel(bool block_until_cancellation_completed = false)
         {
-            m_impl->unsafe_cancel();
-        }
+            std::optional<std::future<void>> future{};
+            if (block_until_cancellation_completed)
+            {
+                std::promise<void> promise{};
+                future.emplace(promise.get_future());
+                auto ticket = add_cancellation_completed_listener([&promise]() {
+                    promise.set_value();
+                });
+            }
 
-        void cancel()
-        {
-            std::promise<void> promise{};
-            auto future = promise.get_future();
-            auto ticket = add_listener([&promise]() {
-                promise.set_value();
-            });
-            unsafe_cancel();
-            future.get();
+            m_impl->unsafe_cancel();
+
+            if (future)
+            {
+                future.value().wait();
+            }
         }
     };
 

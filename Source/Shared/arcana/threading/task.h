@@ -535,10 +535,10 @@ namespace arcana
     arcana::task<void, ErrorT> make_cancellation_task(cancellation_source& cancel)
     {
         task_completion_source<void, ErrorT> source{};
-        auto ticket = cancel.add_listener([source]() mutable {
+        auto ticket = cancel.add_cancellation_completed_listener([source]() mutable {
             source.complete();
         });
-        cancel.unsafe_cancel();
+        cancel.cancel();
         return source.as_task().then(inline_scheduler, cancellation::none(), [ticket{std::move(ticket)}]() {});
     }
 }
