@@ -26,15 +26,15 @@ namespace arcana
             using ticket_scope = collection::ticket_scope;
 
             template<typename CallableT>
-            ticket add_listener(CallableT&& callback, std::function<void()>& copied)
+            ticket add_cancellation_requested_listener(CallableT&& callback, std::function<void()>& copied)
             {
-                return internal_add_listener(m_cancelStartedListeners, std::forward<CallableT>(callback), copied);
+                return internal_add_listener(m_cancelRequestedListeners, std::forward<CallableT>(callback), copied);
             }
 
             template<typename CallableT>
             ticket add_cancellation_completed_listener(CallableT&& callback, std::function<void()>& copied)
             {
-                return internal_add_listener(m_cancelFinishedListeners, std::forward<CallableT>(callback), copied);
+                return internal_add_listener(m_cancelCompletedListeners, std::forward<CallableT>(callback), copied);
             }
 
             void unsafe_cancel()
@@ -57,12 +57,12 @@ namespace arcana
 
                 if (m_cancelStarted)
                 {
-                    signal_cancellation(m_cancelStartedListeners);
+                    signal_cancellation(m_cancelRequestedListeners);
                 }
 
                 if (m_cancelFinished)
                 {
-                    signal_cancellation(m_cancelFinishedListeners);
+                    signal_cancellation(m_cancelCompletedListeners);
                 }
             }
 
@@ -91,7 +91,7 @@ namespace arcana
                         }
                         if (m_cancelFinished)
                         {
-                            signal_cancellation(m_cancelFinishedListeners);
+                            signal_cancellation(m_cancelCompletedListeners);
                         }
                     }})};
                 }
@@ -100,8 +100,8 @@ namespace arcana
         private:
             bool m_cancelStarted{ false };
             bool m_cancelFinished{ false };
-            collection m_cancelStartedListeners;
-            collection m_cancelFinishedListeners;
+            collection m_cancelRequestedListeners;
+            collection m_cancelCompletedListeners;
             mutable std::mutex m_mutex;
 
             size_t m_pins{ 0 };
@@ -167,11 +167,11 @@ namespace arcana
         }
 
         /*
-            Adds a callback that will get called on cancellation. You cancellation
-            will get called synchronously if cancellation has already happened.
+            Adds a callback that will get called when cancellation is requested. The callback
+            will be called synchronously if cancellation has already happened.
         */
         template<typename CallableT>
-        ticket add_listener(CallableT&& callback)
+        ticket add_cancellation_requested_listener(CallableT&& callback)
         {
             if (this == &none())
                 return ticket{ [] {} };
@@ -185,6 +185,11 @@ namespace arcana
             return result;
         }
 
+        /*
+            Adds a callback that will get called when cancellation is completed -- i.e., when
+            no work "guarded" by the cancellation will ever be done again. The callback
+            will be called synchronously if cancellation has already completed.
+        */
         template<typename CallableT>
         ticket add_cancellation_completed_listener(CallableT&& callback)
         {
@@ -233,10 +238,10 @@ namespace arcana
             return { m_impl };
         }
 
-        void cancel(bool block_until_cancellation_completed = false)
+        void cancel(bool blockUntilCompleted = false)
         {
             std::optional<std::future<void>> future{};
-            if (block_until_cancellation_completed)
+            if (blockUntilCompleted)
             {
                 std::promise<void> promise{};
                 future.emplace(promise.get_future());
