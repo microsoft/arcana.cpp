@@ -111,9 +111,25 @@ namespace arcana
                     })
             ) };
 
-            m_payload->create_continuation([&scheduler](auto&& c)
+            m_payload->create_continuation([payload = m_payload.get(), &scheduler, token](auto&& c) mutable
             {
-                scheduler(std::forward<decltype(c)>(c));
+                auto cancel_pin = token.pin();
+                if (cancel_pin)
+                {
+                    scheduler(std::forward<decltype(c)>(c));
+                }
+                else
+                {
+                    // By the time we get here, payload is actually owned by the lambda in c.
+                    // However, due to type erasure, the continuation_payload calling this scheduling
+                    // lambda no longer knows the type information needed to correctly complete
+                    // the payload, so it must be independently captured here so that it can be
+                    // correctly completed in the cancellation case.
+                    if (!payload->completed())
+                    {
+                        payload->complete({ make_unexpected(std::errc::operation_canceled) });
+                    }
+                }
             }, m_payload, std::move(factory.to_run.m_payload));
 
             return factory.to_return;
@@ -271,6 +287,10 @@ namespace arcana
         using traits = internal::callable_traits<CallableT, void>;
         using wrapper = internal::input_output_wrapper<void, typename traits::error_propagation_type, false>;
 
+        // The cancel pin functions like a scope guard, so we take it here in order
+        // to guard the entire method, including the creation of the factory.
+        auto cancel_pin = token.pin();
+
         auto factory{ internal::make_task_factory(
             internal::make_work_payload<typename traits::expected_return_type::value_type, typename traits::error_propagation_type>(
                 [callable = wrapper::wrap_callable(std::forward<CallableT>(callable), token)]
@@ -280,10 +300,17 @@ namespace arcana
                 })
         ) };
 
-        scheduler([to_run = std::move(factory.to_run)]
+        if (cancel_pin)
         {
-            to_run.m_payload->run(nullptr);
-        });
+            scheduler([to_run = std::move(factory.to_run)]
+            {
+                to_run.m_payload->run(nullptr);
+            });
+        }
+        else
+        {
+            factory.to_run.m_payload->complete({ make_unexpected(std::errc::operation_canceled) });
+        }
 
         return factory.to_return;
     }
@@ -502,5 +529,16 @@ namespace arcana
             });
         });
         return result;
+    }
+
+    template<typename ErrorT>
+    arcana::task<void, ErrorT> make_cancellation_task(cancellation_source& cancel)
+    {
+        task_completion_source<void, ErrorT> source{};
+        auto ticket = cancel.add_cancellation_completed_listener([source]() mutable {
+            source.complete();
+        });
+        cancel.cancel();
+        return source.as_task().then(inline_scheduler, cancellation::none(), [ticket{std::move(ticket)}]() {});
     }
 }
