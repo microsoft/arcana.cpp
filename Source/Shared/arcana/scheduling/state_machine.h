@@ -34,7 +34,7 @@ namespace arcana
 
             stateTasks.StateEntered->complete(expected<void, std::error_code>::make_valid());
 
-            std::shared_ptr<cancellation_data> listener = std::make_shared<cancellation_data>(cancel.add_listener([this, &state]
+            std::shared_ptr<cancellation_data> listener = std::make_shared<cancellation_data>(cancel.add_cancellation_requested_listener([this, &state]
             {
                 cancel_exit(state);
             }));
@@ -74,7 +74,7 @@ namespace arcana
                 stateTasks = completion;
             }
 
-            std::shared_ptr<cancellation_data> listener = std::make_shared<cancellation_data>(cancel.add_listener([this, &state]
+            std::shared_ptr<cancellation_data> listener = std::make_shared<cancellation_data>(cancel.add_cancellation_requested_listener([this, &state]
             {
                 cancel_enter(state);
             }));
