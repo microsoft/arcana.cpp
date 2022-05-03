@@ -235,21 +235,21 @@ namespace arcana
 
         void cancel(bool blockUntilCompleted = false)
         {
-            std::optional<std::future<void>> future{};
+            std::optional<std::promise<void>> promise{};
+            std::optional<cancellation::ticket> ticket{};
             if (blockUntilCompleted)
             {
-                std::promise<void> promise{};
-                future.emplace(promise.get_future());
-                auto ticket = add_cancellation_completed_listener([&promise]() {
-                    promise.set_value();
-                });
+                promise.emplace();
+                ticket.emplace(add_cancellation_completed_listener([&promise]() {
+                    promise.value().set_value();
+                }));
             }
 
             m_impl->unsafe_cancel();
 
-            if (future)
+            if (promise)
             {
-                future.value().wait();
+                promise.value().get_future().wait();
             }
         }
     };
