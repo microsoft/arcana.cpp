@@ -177,7 +177,7 @@ namespace arcana
                 return ticket{ [] {} };
 
             std::function<void()> copied;
-            ticket result{ m_impl->add_listener(callback, copied) };
+            ticket result{ m_impl->add_cancellation_requested_listener(callback, copied) };
 
             if (copied)
                 copied();
@@ -232,11 +232,6 @@ namespace arcana
 
         cancellation_source(const cancellation_source&) = delete;
         cancellation_source(cancellation_source&&) = delete;
-
-        operator cancellation()
-        {
-            return { m_impl };
-        }
 
         void cancel(bool blockUntilCompleted = false)
         {
