@@ -177,7 +177,7 @@ namespace arcana
                 return ticket{ [] {} };
 
             std::function<void()> copied;
-            ticket result{ m_impl->add_listener(callback, copied) };
+            ticket result{ m_impl->add_cancellation_requested_listener(callback, copied) };
 
             if (copied)
                 copied();
@@ -233,28 +233,23 @@ namespace arcana
         cancellation_source(const cancellation_source&) = delete;
         cancellation_source(cancellation_source&&) = delete;
 
-        operator cancellation()
-        {
-            return { m_impl };
-        }
-
         void cancel(bool blockUntilCompleted = false)
         {
-            std::optional<std::future<void>> future{};
+            std::optional<std::promise<void>> promise{};
+            std::optional<cancellation::ticket> ticket{};
             if (blockUntilCompleted)
             {
-                std::promise<void> promise{};
-                future.emplace(promise.get_future());
-                auto ticket = add_cancellation_completed_listener([&promise]() {
-                    promise.set_value();
-                });
+                promise.emplace();
+                ticket.emplace(add_cancellation_completed_listener([&promise]() {
+                    promise.value().set_value();
+                }));
             }
 
             m_impl->unsafe_cancel();
 
-            if (future)
+            if (promise)
             {
-                future.value().wait();
+                promise.value().get_future().wait();
             }
         }
     };

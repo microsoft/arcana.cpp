@@ -121,7 +121,7 @@ namespace arcana
     {
     public:
         background_dispatcher()
-            : m_registration{ m_cancellation.add_listener([this] { this->cancelled(); }) }
+            : m_registration{ m_cancellation.add_cancellation_requested_listener([this] { this->cancelled(); }) }
         {
             m_thread = std::thread{ [&]() {
 
