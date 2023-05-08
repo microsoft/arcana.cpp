@@ -511,11 +511,7 @@ namespace arcana
 
                 return[callable = std::forward<CallableT>(callable), &cancel](const basic_expected<InputT, InputErrorT>& input) mutable noexcept
                 {
-                    // Because the callable supports an expected<> input parameter
-                    // we need to call it if the previous task fails. But if the task doesn't
-                    // care about cancellation, and it's cancellation token is set then we
-                    // can just return the cancellation result directly.
-                    if (!input.has_error() && cancel.cancelled())
+                    if (cancel.cancelled())
                         return typename traits::expected_return_type{ make_unexpected(std::errc::operation_canceled) };
 
                     return output_wrapper<typename traits::return_type, typename traits::error_propagation_type>::invoke(callable, input);
