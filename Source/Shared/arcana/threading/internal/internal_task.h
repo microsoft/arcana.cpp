@@ -43,7 +43,7 @@ namespace arcana
             struct continuation_payload
             {
                 using queue_function = stdext::inplace_function<void(), 2 * sizeof(std::shared_ptr<void>)>;
-                using scheduling_function = stdext::inplace_function<void(queue_function&&), sizeof(intptr_t) + sizeof(intptr_t) + sizeof(cancellation)>;
+                using scheduling_function = stdext::inplace_function<void(queue_function&&), sizeof(intptr_t)>;
 
                 explicit operator bool() const noexcept
                 {
@@ -68,21 +68,12 @@ namespace arcana
 
                 void run()
                 {
-                    auto shared = parent.lock();
-                    if (!shared)
-                    {
-                        // It is possible for the entire task which requested work to be done to
-                        // be disposed before the work is finished. This can occur, for example,
-                        // if the parent task was created from a completion source which survived
-                        // and was completed after the task on which the continuations were added
-                        // was discarded. If this happens, it means no reference to the work 
-                        // remains, and all we can do here is assume that resources have been 
-                        // cleaned up and allow the work to disappear.
-                        return;
-                    }
+                    assert(parent.lock() && "parent of a continuation can't be null");
 
-                    schedulingFunction([shared = std::move(shared), continuation = std::move(continuation)]
+                    schedulingFunction([shared = parent.lock(), continuation = std::move(continuation)]
                     {
+                        assert(shared.get() && "parent of a continuation can't be null");
+
                         continuation->run(shared.get());
                     });
                 }
@@ -518,14 +509,13 @@ namespace arcana
             {
                 using traits = callable_traits<CallableT, InputT>;
 
-                return[callable = std::forward<CallableT>(callable), cancel](const basic_expected<InputT, InputErrorT>& input) mutable noexcept
+                return[callable = std::forward<CallableT>(callable), &cancel](const basic_expected<InputT, InputErrorT>& input) mutable noexcept
                 {
                     // Because the callable supports an expected<> input parameter
                     // we need to call it if the previous task fails. But if the task doesn't
-                    // care about cancellation, and its cancellation token is set then we
+                    // care about cancellation, and it's cancellation token is set then we
                     // can just return the cancellation result directly.
-                    auto cancel_pin = cancel.pin();
-                    if (!input.has_error() && !cancel_pin)
+                    if (!input.has_error() && cancel.cancelled())
                         return typename traits::expected_return_type{ make_unexpected(std::errc::operation_canceled) };
 
                     return output_wrapper<typename traits::return_type, typename traits::error_propagation_type>::invoke(callable, input);
@@ -541,15 +531,14 @@ namespace arcana
             {
                 using traits = callable_traits<CallableT, InputT>;
 
-                return[callable = std::forward<CallableT>(callable), cancel](const basic_expected<InputT, InputErrorT>& input) mutable noexcept
+                return[callable = std::forward<CallableT>(callable), &cancel](const basic_expected<InputT, InputErrorT>& input) mutable noexcept
                 {
                     // Here the callable doesn't handle expected<> which means we don't have to invoke
                     // it if the previous task error'd out or its cancellation token is set.
                     if (input.has_error())
                         return typename traits::expected_return_type{ make_unexpected(input.error()) };
 
-                    auto cancel_pin = cancel.pin();
-                    if (!cancel_pin)
+                    if (cancel.cancelled())
                         return typename traits::expected_return_type{ make_unexpected(std::errc::operation_canceled) };
 
                     return output_wrapper<typename traits::return_type, typename traits::error_propagation_type>::invoke(callable, input.value());
@@ -565,15 +554,14 @@ namespace arcana
             {
                 using traits = callable_traits<CallableT, void>;
 
-                return[callable = std::forward<CallableT>(callable), cancel](const basic_expected<void, InputErrorT>& input) mutable noexcept
+                return[callable = std::forward<CallableT>(callable), &cancel](const basic_expected<void, InputErrorT>& input) mutable noexcept
                 {
                     // Here the callable doesn't handle expected<> which means we don't have to invoke
                     // it if the previous task error'd out or its cancellation token is set.
                     if (input.has_error())
                         return typename traits::expected_return_type{ make_unexpected(input.error()) };
-                    
-                    auto cancel_pin = cancel.pin();
-                    if (!cancel_pin)
+
+                    if (cancel.cancelled())
                         return typename traits::expected_return_type{ make_unexpected(std::errc::operation_canceled) };
 
                     return output_wrapper<typename traits::return_type, typename traits::error_propagation_type>::invoke(callable);
