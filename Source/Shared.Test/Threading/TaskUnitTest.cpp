@@ -769,6 +769,22 @@ namespace UnitTests
             Assert::AreEqual(2, hitCount);
         }
 
+        TEST_METHOD(CanceledExpectedContinuation)
+        {
+            arcana::cancellation_source cancel;
+            cancel.cancel();
+
+            bool wasCalled = false;
+
+            arcana::task_from_error<void>(std::errc::invalid_argument)
+                .then(arcana::inline_scheduler, cancel, [&](const arcana::expected<void, std::error_code>& value) noexcept
+                {
+                    wasCalled = true;
+                });
+
+            Assert::IsFalse(wasCalled, L"This method shouldn't run");
+        }
+
         TEST_METHOD(CancellationOrder_IsReverseOfOrderAdded)
         {
             arcana::cancellation_source root;
