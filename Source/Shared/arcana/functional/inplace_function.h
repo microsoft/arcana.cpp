@@ -105,7 +105,7 @@ namespace stdext
             this->set(std::move(c));
         }
 
-        // Copy construct an implace_function, storing a copy of other’s target internally
+        // Copy construct an implace_function, storing a copy of other's target internally
         // May throw any exception encountered by the constructor when copying the target object
         inplace_function(const inplace_function& other)
         {
@@ -113,7 +113,7 @@ namespace stdext
             this->copy(other);
         }
 
-        // Move construct an implace_function, moving the other’s target to this inplace_function’s internal buffer
+        // Move construct an implace_function, moving the other's target to this inplace_function's internal buffer
         // May throw any exception encountered by the constructor when moving the target object
         inplace_function(inplace_function&& other)
         {
@@ -138,7 +138,7 @@ namespace stdext
             this->move(std::move(other));
         }
 
-        // Assigns a copy of other’s target
+        // Assigns a copy of other's target
         // May throw any exception encountered by the assignment operator when copying the target object
         inplace_function& operator=(const inplace_function& other)
         {
@@ -148,7 +148,7 @@ namespace stdext
             return *this;
         }
 
-        // Assigns the other’s target by way of moving
+        // Assigns the other's target by way of moving
         // May throw any exception encountered by the assignment operator when moving the target object
         inplace_function& operator=(inplace_function&& other)
         {
