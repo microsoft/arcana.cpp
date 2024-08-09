@@ -12,6 +12,7 @@
 #include <shared_mutex>
 #include <system_error>
 #include <unordered_map>
+#include <optional>
 
 namespace arcana
 {
@@ -79,7 +80,17 @@ namespace arcana
             unordered_bimap<const std::error_category*, int32_t> m_storageBimap;
         };
 
-        static category_storage s_categoryStorage;
+        static std::optional<category_storage> s_categoryStorage;
+    }
+
+    category_storage& get_category_storage()
+    {
+        if (!s_categoryStorage.has_value())
+        {
+            s_categoryStorage.emplace();
+        }
+
+        return *s_categoryStorage;
     }
 
     const std::error_category* get_category_from_hresult(int32_t hresult)
@@ -91,7 +102,7 @@ namespace arcana
             return nullptr;
         }
 
-        return s_categoryStorage.get_category(HRESULT_FACILITY(hresult));
+        return get_category_storage().get_category(HRESULT_FACILITY(hresult));
     }
 
     const char* hresult_error_category::name() const noexcept
@@ -116,7 +127,7 @@ namespace arcana
 
     void hresult_error_category::add_category(const std::error_category& category)
     {
-        s_categoryStorage.add_category(category);
+        get_category_storage().add_category(category);
     }
 
     const std::error_category& hresult_category()
@@ -155,7 +166,7 @@ namespace arcana
 
         assert((error_code.value() == HRESULT_CODE(error_code.value())) && "error_code value using more than 16 bits, which is too large for an hresult");
 
-        std::optional<int> facility = s_categoryStorage.get_facility(error_code.category());
+        std::optional<int> facility = get_category_storage().get_facility(error_code.category());
         if (facility)
         {
             return make_hresult_code(facility.value(), error_code.value());
