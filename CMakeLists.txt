@@ -1,9 +1,36 @@
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.15)
+
+include(FetchContent)
+
+# --------------------------------------------------
+# Declarations
+# --------------------------------------------------
+
+FetchContent_Declare(googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.14.0)
+FetchContent_Declare(GSL
+    GIT_REPOSITORY https://github.com/Microsoft/GSL.git
+    GIT_TAG v4.0.0)
+
+# --------------------------------------------------
 
 project(arcana.cpp)
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+FetchContent_MakeAvailable(GSL)
+
+# --------------------------------------------------
+# Options
+# --------------------------------------------------
+
+option(ARCANA_TESTS "Include arcana.cpp tests." ${PROJECT_IS_TOP_LEVEL})
+
+# --------------------------------------------------
 
 # Top-level folder
 set(SOURCES
@@ -70,7 +97,6 @@ if(WIN32)
 
     add_library(arcana ${SOURCES})
 
-    target_include_directories(arcana PUBLIC "Source/Submodules/GSL/include")
     target_include_directories(arcana PUBLIC "Source/Shared")
     target_include_directories(arcana PUBLIC "Source/Windows")
 
@@ -81,7 +107,6 @@ if(WIN32)
 else()
     add_library(arcana INTERFACE)
 
-    target_include_directories(arcana INTERFACE "Source/Submodules/GSL/include")
     target_include_directories(arcana INTERFACE "Source/Shared")
 
     if(ANDROID)
@@ -93,4 +118,58 @@ else()
     endif()
 endif()
 
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
+target_include_directories(arcana PUBLIC "${gsl_SOURCE_DIR}/include")
+
+if(ARCANA_TESTS)
+    FetchContent_MakeAvailable(googletest)
+    include(GoogleTest)
+
+    set(TEST_SOURCES
+        "Source/Shared.Test/AlgorithmUnitTest.cpp"
+        "Source/Shared.Test/ExpectedUnitTest.cpp"
+        "Source/Shared.Test/InplaceFunctionUnitTest.cpp"
+        "Source/Shared.Test/IteratorUnitTest.cpp"
+        "Source/Shared.Test/TypeTraitsTest.cpp"
+        "Source/Shared.Test/Containers/ContainerUnitTest.cpp"
+        "Source/Shared.Test/Experimental/ArrayUnitTest.cpp"
+        "Source/Shared.Test/Messaging/MediatorUnitTest.cpp"
+        "Source/Shared.Test/Scheduling/SchedulingUnitTest.cpp"
+        "Source/Shared.Test/Threading/CoroutineTests.cpp"
+        "Source/Shared.Test/Threading/DispatcherUnitTest.cpp"
+        "Source/Shared.Test/Threading/TaskUnitTest.cpp")
+
+    if(WIN32)
+        # Windows-specific tests
+        set(TEST_SOURCES
+            ${TEST_SOURCES}
+            "Source/Windows.Test/HresultTest.cpp"
+            "Source/Windows.Test/Threading/TaskConversionsTests.cpp"
+            "Source/Windows.Test/Threading/TaskSchedulersTests.cpp")
+    endif()
+
+    add_executable(arcana_tests ${TEST_SOURCES})
+
+    target_include_directories(arcana_tests
+        PRIVATE "Source/Shared")
+
+    target_link_libraries(arcana_tests
+        PRIVATE arcana
+        PRIVATE gtest_main
+        PRIVATE gtest)
+
+    if(WIN32)
+        target_include_directories(arcana_tests
+            PRIVATE "Source/Windows")
+
+        target_link_libraries(arcana_tests
+            PRIVATE onecore.lib)
+    endif()
+
+    enable_testing()
+    gtest_discover_tests(arcana_tests)
+
+    set_property(TARGET gmock PROPERTY FOLDER Dependencies)
+    set_property(TARGET gmock_main PROPERTY FOLDER Dependencies)
+    set_property(TARGET gtest PROPERTY FOLDER Dependencies)
+    set_property(TARGET gtest_main PROPERTY FOLDER Dependencies)
+endif()

@@ -3,75 +3,66 @@
 //
 
 #include <arcana/threading/task_conversions.h>
-#include <CppUnitTest.h>
+#include <gtest/gtest.h>
 #include <winrt/Windows.Devices.Enumeration.h>
 #include <winrt/Windows.Storage.h>
 
 #include <future>
 
-using namespace Microsoft::VisualStudio::CppUnitTestFramework;
-
-namespace UnitTests
+TEST(TaskConversionsTest, GivenAsyncOperation_WhenOperationSuceeds_TaskAlsoSucceeds)
 {
-    TEST_CLASS(TaskConversionsTest)
-    {
-    public:
-        TEST_METHOD(GivenAsyncOperation_WhenOperationSuceeds_TaskAlsoSucceeds)
+    using namespace winrt::Windows::Devices::Enumeration;
+
+    std::promise<std::optional<arcana::expected<DeviceInformationCollection, std::error_code>>> promise;
+
+    const auto asyncOperation = DeviceInformation::FindAllAsync(DeviceClass::All);
+    auto task = arcana::create_task<std::error_code>(asyncOperation);
+
+    task.then(arcana::inline_scheduler, arcana::cancellation::none(),
+        [&](const arcana::expected<DeviceInformationCollection, std::error_code>& result) noexcept
         {
-            using namespace winrt::Windows::Devices::Enumeration;
+            promise.set_value(result);
+        });
 
-            std::promise<std::optional<arcana::expected<DeviceInformationCollection, std::error_code>>> promise;
+    EXPECT_TRUE(promise.get_future().get()->value() != nullptr);
+}
 
-            const auto asyncOperation = DeviceInformation::FindAllAsync(DeviceClass::All);
-            auto task = arcana::create_task<std::error_code>(asyncOperation);
+TEST(TaskConversionsTest, GivenAsyncOperation_WhenOperationFails_TaskAlsoFails)
+{
+    using namespace winrt::Windows::Storage;
 
-            task.then(arcana::inline_scheduler, arcana::cancellation::none(),
-                [&](const arcana::expected<DeviceInformationCollection, std::error_code>& result) noexcept
-                {
-                    promise.set_value(result);
-                });
+    std::promise<std::optional<arcana::expected<StorageFolder, std::error_code>>> promise;
 
-            Assert::IsTrue(promise.get_future().get()->value() != nullptr);
-        }
+    const auto asyncOperation = StorageFolder::GetFolderFromPathAsync(std::wstring(L"not a valid path"));
+    auto task = arcana::create_task<std::error_code>(asyncOperation);
 
-        TEST_METHOD(GivenAsyncOperation_WhenOperationFails_TaskAlsoFails)
+    task.then(arcana::inline_scheduler, arcana::cancellation::none(),
+        [&](const arcana::expected<StorageFolder, std::error_code>& result) noexcept
         {
-            using namespace winrt::Windows::Storage;
+            promise.set_value(result);
+        });
 
-            std::promise<std::optional<arcana::expected<StorageFolder, std::error_code>>> promise;
+    EXPECT_EQ(E_INVALIDARG, static_cast<HRESULT>(promise.get_future().get()->error().value()));
+}
 
-            const auto asyncOperation = StorageFolder::GetFolderFromPathAsync(std::wstring(L"not a valid path"));
-            auto task = arcana::create_task<std::error_code>(asyncOperation);
+TEST(TaskConversionsTest, GivenAsyncOperation_WhenOperationIsCanceled_TaskAlsoIsCanceled)
+{
+    using namespace winrt::Windows::Devices::Enumeration;
 
-            task.then(arcana::inline_scheduler, arcana::cancellation::none(),
-                [&](const arcana::expected<StorageFolder, std::error_code>& result) noexcept
-                {
-                    promise.set_value(result);
-                });
+    std::promise<std::optional<arcana::expected<DeviceInformationCollection, std::error_code>>> promise;
 
-            Assert::AreEqual(E_INVALIDARG, static_cast<HRESULT>(promise.get_future().get()->error().value()));
-        }
+    const auto asyncOperation = DeviceInformation::FindAllAsync();
+    asyncOperation.Cancel();
+    auto task = arcana::create_task<std::error_code>(asyncOperation);
 
-        TEST_METHOD(GivenAsyncOperation_WhenOperationIsCanceled_TaskAlsoIsCanceled)
+    task.then(arcana::inline_scheduler, arcana::cancellation::none(),
+        [&](const arcana::expected<DeviceInformationCollection, std::error_code>& result) noexcept
         {
-            using namespace winrt::Windows::Devices::Enumeration;
+            promise.set_value(result);
+        });
 
-            std::promise<std::optional<arcana::expected<DeviceInformationCollection, std::error_code>>> promise;
+    const auto result = promise.get_future().get();
 
-            const auto asyncOperation = DeviceInformation::FindAllAsync();
-            asyncOperation.Cancel();
-            auto task = arcana::create_task<std::error_code>(asyncOperation);
-
-            task.then(arcana::inline_scheduler, arcana::cancellation::none(),
-                [&](const arcana::expected<DeviceInformationCollection, std::error_code>& result) noexcept
-                {
-                    promise.set_value(result);
-                });
-
-            const auto result = promise.get_future().get();
-
-            Assert::IsTrue(result->has_error());
-            Assert::IsTrue(result->error() == std::errc::operation_canceled);
-        }
-    };
+    EXPECT_TRUE(result->has_error());
+    EXPECT_TRUE(result->error() == std::errc::operation_canceled);
 }
