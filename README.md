@@ -7,59 +7,39 @@ You can learn more about API usage in the [arcana.cpp documentation](Source/Arca
 ## Getting Started
 
 1. Clone the repo and checkout the master branch.
-1. Arcana depends on GSL, so be sure to update your submodules: `git submodule update --init --recursive`
 
 ### Prerequisites
 
-#### Visual Studio 2017
+- CMake 3.15 or higher
+- A C++17 compatible compiler (Visual Studio 2019+, GCC 8+, or Clang 7+)
 
-You will need the following optional components:
+### Building with CMake
 
-- UWP
-- Windows 10 SDK
-- Android
+#### Configure and Build
 
-You can add these to your Visual Studio installation via:
+From the root directory of the repository:
 
-```batch
-"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify ^
---installPath "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise" ^
---add Microsoft.VisualStudio.Component.UWP.Support ^
---add Microsoft.VisualStudio.Component.Windows10SDK.17134 ^
---add Component.Android.NDK.R15C ^
---add Component.Android.NDK.R15C_3264 ^
---add Component.Android.SDK19.Private ^
---add Component.Android.SDK21.Private ^
---add Component.Android.SDK22.Private ^
---add Component.Android.SDK23 ^
---add Component.Android.SDK23.Private ^
---add Component.Android.SDK25.Private ^
---add Component.MDD.Android
+```cmd
+# Configure the project
+cmake -B Build
 ```
 
-### Installing
+#### Build Options
 
-#### Build the Code
+- `ARCANA_TESTS`: Enable/disable building tests (default: ON if this is the top-level project)
 
-The code can be built from Visual Studio via:
+#### Platform-Specific Examples
 
-1. Open Source\Arcana.cpp.sln.
-1. Select a target configuration (e.g. Debug) and platform (e.g. x86).
-1. Build the solution.
+**Windows (Visual Studio)**
+```cmd
+cmake -B Build
+start Build\arcana.cpp.sln
+```
 
-Alternatively, the code can be built from the command line via:
-
-1. Open the *Developer Command Prompt for VS 2017*
-1. Type *msbuild Source\Arcana.cpp.sln /p:Configuration=Release /p:Platform=x86*
-
-Replace *Release* and *x86* with whatever configuration and platform you would like to build locally.
-
-## Running the tests
-
-The unit tests can be run within Visual Studio via Test Explorer, or from the *Developer Command Prompt for VS 2017* via:
-
-```batch
-"C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\IDE\Extensions\TestPlatform\vstest.console.exe" .\BuildOutput\Debug\Win32\Arcana.UWP.Test\Bin\Arcana.UWP.Test.dll
+**macOS (Xcode)**
+```zsh
+cmake -B Build -G Xcode
+open Build/arcana.cpp.xcodeproj
 ```
 
 ## Deployment

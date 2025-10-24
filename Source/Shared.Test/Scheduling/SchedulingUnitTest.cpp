@@ -1,18 +1,16 @@
-#include <CppUnitTest.h>
+#include <gtest/gtest.h>
 
-#include <arcana\scheduling\state_machine.h>
+#include <arcana/scheduling/state_machine.h>
 
-#include <arcana\threading\dispatcher.h>
-#include <arcana\threading\pending_task_scope.h>
+#include <arcana/threading/dispatcher.h>
+#include <arcana/threading/pending_task_scope.h>
 
-#include <arcana\messaging\mediator.h>
+#include <arcana/messaging/mediator.h>
 
 #include <memory>
 #include <future>
 
-using Assert = Microsoft::VisualStudio::CppUnitTestFramework::Assert;
-
-namespace UnitTests
+namespace
 {
     arcana::state_machine_state<bool> TrackingInit{ "TrackingInit" };
 
@@ -154,542 +152,539 @@ namespace UnitTests
             }
         });
     }
+}
 
-    TEST_CLASS(SchedulingUnitTest)
+TEST(SchedulingUnitTest, RepeatingLinearSchedule)
+{
+    arcana::state_machine_driver driver{};
+    arcana::state_machine_observer sched{ driver };
+    arcana::manual_dispatcher<32> dispatch;
+    Mediator mediator{ dispatch };
+
+    LinearSchedule(driver, dispatch);
+
+    Context context{
+        mediator,
+        sched,
+        dispatch
+    };
+
+    TrackingWorker worker{ context };
+
+    do
     {
-        TEST_METHOD(RepeatingLinearSchedule)
+        if (worker.Iterations == 2)
         {
-            arcana::state_machine_driver driver{};
-            arcana::state_machine_observer sched{ driver };
-            arcana::manual_dispatcher<32> dispatch;
-            Mediator mediator{ dispatch };
-
-            LinearSchedule(driver, dispatch);
-
-            Context context{
-                mediator,
-                sched,
-                dispatch
-            };
-
-            TrackingWorker worker{ context };
-
-            do
-            {
-                if (worker.Iterations == 2)
-                {
-                    worker.ShutdownAsync();
-                    break;
-                }
-
-                mediator.send<ImageReceived>({});
-            } while (dispatch.tick(arcana::cancellation::none()));
-
-            while (dispatch.tick(arcana::cancellation::none())) {};
-
-            Assert::AreEqual(120, worker.Result);
+            worker.ShutdownAsync();
+            break;
         }
 
-        TEST_METHOD(ConditionalSchedule)
+        mediator.send<ImageReceived>({});
+    } while (dispatch.tick(arcana::cancellation::none()));
+
+    while (dispatch.tick(arcana::cancellation::none())) {};
+
+    EXPECT_EQ(120, worker.Result);
+}
+
+TEST(SchedulingUnitTest, ConditionalSchedule)
+{
+    arcana::state_machine_driver driver{};
+    arcana::state_machine_observer sched{ driver };
+    arcana::manual_dispatcher<32> dispatch;
+    Mediator mediator{ dispatch };
+
+    InitializationSchedule(driver, dispatch);
+
+    Context context{
+        mediator,
+        sched,
+        dispatch
+    };
+
+    InitializationWorker init{ context };
+    TrackingWorker worker{ context };
+
+    do
+    {
+        if (worker.Iterations == 2)
         {
-            arcana::state_machine_driver driver{};
-            arcana::state_machine_observer sched{ driver };
-            arcana::manual_dispatcher<32> dispatch;
-            Mediator mediator{ dispatch };
-
-            InitializationSchedule(driver, dispatch);
-
-            Context context{
-                mediator,
-                sched,
-                dispatch
-            };
-
-            InitializationWorker init{ context };
-            TrackingWorker worker{ context };
-
-            do
-            {
-                if (worker.Iterations == 2)
-                {
-                    worker.ShutdownAsync();
-                    break;
-                }
-
-                mediator.send<ImageReceived>({});
-            } while (dispatch.tick(arcana::cancellation::none()));
-
-            while (dispatch.tick(arcana::cancellation::none())) {};
-
-            Assert::AreEqual(4, init.Count);
-            Assert::AreEqual(2, worker.Iterations);
-            Assert::AreEqual(120, worker.Result);
+            worker.ShutdownAsync();
+            break;
         }
 
-        TEST_METHOD(SendDataFromWorker)
+        mediator.send<ImageReceived>({});
+    } while (dispatch.tick(arcana::cancellation::none()));
+
+    while (dispatch.tick(arcana::cancellation::none())) {};
+
+    EXPECT_EQ(4, init.Count);
+    EXPECT_EQ(2, worker.Iterations);
+    EXPECT_EQ(120, worker.Result);
+}
+
+TEST(SchedulingUnitTest, SendDataFromWorker)
+{
+    arcana::state_machine_driver driver{};
+    arcana::state_machine_observer sched{ driver };
+
+    arcana::state_machine_state<bool> one{ "One" }, two{ "Two" }, three{ "Three" };
+
+    arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(one, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const bool& data) noexcept
+    {
+        EXPECT_FALSE(data);
+        return driver.move_to(two, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const bool& data) noexcept
+    {
+        EXPECT_TRUE(data);
+        return driver.move_to(three, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const bool& data) noexcept
+    {
+        EXPECT_FALSE(data);
+    });
+
+    std::stringstream ss;
+
+    arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return sched.on(one, arcana::inline_scheduler, arcana::cancellation::none(), [&](bool&) noexcept
         {
-            arcana::state_machine_driver driver{};
-            arcana::state_machine_observer sched{ driver };
-
-            arcana::state_machine_state<bool> one{ "One" }, two{ "Two" }, three{ "Three" };
-
-            arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(one, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const bool& data) noexcept
-            {
-                Assert::IsFalse(data);
-                return driver.move_to(two, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const bool& data) noexcept
-            {
-                Assert::IsTrue(data);
-                return driver.move_to(three, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const bool& data) noexcept
-            {
-                Assert::IsFalse(data);
-            });
-
-            std::stringstream ss;
-
-            arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return sched.on(one, arcana::inline_scheduler, arcana::cancellation::none(), [&](bool&) noexcept
-                {
-                    ss << "one";
-                });
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return sched.on(two, arcana::inline_scheduler, arcana::cancellation::none(), [&](bool& data) noexcept
-                {
-                    ss << "two";
-                    data = true;
-                });
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return sched.on(three, arcana::inline_scheduler, arcana::cancellation::none(), [&](bool&) noexcept
-                {
-                    ss << "three";
-                });
-            });
-
-            Assert::AreEqual<std::string>("onetwothree", ss.str());
-        }
-
-        TEST_METHOD(MoveToEachState)
+            ss << "one";
+        });
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return sched.on(two, arcana::inline_scheduler, arcana::cancellation::none(), [&](bool& data) noexcept
         {
-            arcana::state_machine_driver driver{};
-            arcana::state_machine_observer sched{ driver };
-            
-            arcana::state_machine_state<void> one{ "One" }, two{ "Two" }, three{ "Three" };
-
-            arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(one, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(two, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(three, arcana::cancellation::none());
-            });
-
-            std::stringstream ss;
-
-            arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return sched.on(one, arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-                {
-                    ss << "one";
-                });
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return sched.on(two, arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-                {
-                    ss << "two";
-                });
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return sched.on(three, arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-                {
-                    ss << "three";
-                });
-            });
-
-            Assert::AreEqual<std::string>("onetwothree", ss.str());
-        }
-
-        TEST_METHOD(CancellationCancelsTheSchedulingMethod)
+            ss << "two";
+            data = true;
+        });
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return sched.on(three, arcana::inline_scheduler, arcana::cancellation::none(), [&](bool&) noexcept
         {
-            arcana::state_machine_driver driver{};
-            arcana::state_machine_observer sched{ driver };
+            ss << "three";
+        });
+    });
 
-            arcana::state_machine_state<void> one{ "One" }, two{ "Two" };
+    EXPECT_EQ("onetwothree", ss.str());
+}
 
-            arcana::cancellation_source cancel;
+TEST(SchedulingUnitTest, MoveToEachState)
+{
+    arcana::state_machine_driver driver{};
+    arcana::state_machine_observer sched{ driver };
+    
+    arcana::state_machine_state<void> one{ "One" }, two{ "Two" }, three{ "Three" };
 
-            bool driverFinished = false;
+    arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(one, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(two, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(three, arcana::cancellation::none());
+    });
 
-            arcana::make_task(arcana::inline_scheduler, cancel, [&]() noexcept
-            {
-                return driver.move_to(one, cancel);
-            }).then(arcana::inline_scheduler, cancel, [&]() noexcept
-            {
-                return driver.move_to(two, cancel);
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const arcana::expected<void, std::error_code>&) noexcept
-            {
-                driverFinished = true;
-            });
+    std::stringstream ss;
 
-            bool observerFinished = false;
-
-            arcana::make_task(arcana::inline_scheduler, cancel, [&]() noexcept
-            {
-                cancel.cancel();
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const arcana::expected<void, std::error_code>&) noexcept
-            {
-                observerFinished = true;
-            });
-
-            Assert::IsTrue(driverFinished);
-            Assert::IsTrue(observerFinished);
-        }
-
-        arcana::task<void, std::error_code> WorkOn(
-            std::stringstream& stream,
-            arcana::state_machine_observer& sched,
-            arcana::state_machine_state<void>& state,
-            arcana::cancellation& cancel,
-            arcana::dispatcher<32>& dispatcher)
+    arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return sched.on(one, arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
         {
-            return arcana::make_task(dispatcher, cancel, [&]() noexcept
-            {
-                return sched.on(state, dispatcher, cancel, [&]() noexcept
-                {
-                    stream << state.name();
-                });
-            }).then(dispatcher, cancel, [&]() noexcept
-            {
-                return WorkOn(stream, sched, state, cancel, dispatcher);
-            });
-        }
-
-        TEST_METHOD(SequentialSchedule)
+            ss << "one";
+        });
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return sched.on(two, arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
         {
-            arcana::state_machine_driver driver{};
-            arcana::state_machine_observer sched{ driver };
-            arcana::cancellation_source cancel;
-            arcana::background_dispatcher<32> background;
+            ss << "two";
+        });
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return sched.on(three, arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+        {
+            ss << "three";
+        });
+    });
 
-            arcana::state_machine_state<void> one{ "1" }, two{ "2" }, three{ "3" };
+    EXPECT_EQ("onetwothree", ss.str());
+}
 
-            std::promise<void> signal;
+TEST(SchedulingUnitTest, CancellationCancelsTheSchedulingMethod)
+{
+    arcana::state_machine_driver driver{};
+    arcana::state_machine_observer sched{ driver };
 
-            arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    arcana::state_machine_state<void> one{ "One" }, two{ "Two" };
+
+    arcana::cancellation_source cancel;
+
+    bool driverFinished = false;
+
+    arcana::make_task(arcana::inline_scheduler, cancel, [&]() noexcept
+    {
+        return driver.move_to(one, cancel);
+    }).then(arcana::inline_scheduler, cancel, [&]() noexcept
+    {
+        return driver.move_to(two, cancel);
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const arcana::expected<void, std::error_code>&) noexcept
+    {
+        driverFinished = true;
+    });
+
+    bool observerFinished = false;
+
+    arcana::make_task(arcana::inline_scheduler, cancel, [&]() noexcept
+    {
+        cancel.cancel();
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const arcana::expected<void, std::error_code>&) noexcept
+    {
+        observerFinished = true;
+    });
+
+    EXPECT_TRUE(driverFinished);
+    EXPECT_TRUE(observerFinished);
+}
+
+    arcana::task<void, std::error_code> WorkOn(
+        std::stringstream& stream,
+        arcana::state_machine_observer& sched,
+        arcana::state_machine_state<void>& state,
+        arcana::cancellation& cancel,
+        arcana::dispatcher<32>& dispatcher)
+    {
+        return arcana::make_task(dispatcher, cancel, [&]() noexcept
+        {
+            return sched.on(state, dispatcher, cancel, [&]() noexcept
             {
-                return driver.move_to(one, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(two, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(three, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                signal.set_value();
+                stream << state.name();
             });
+        }).then(dispatcher, cancel, [&]() noexcept
+        {
+            return WorkOn(stream, sched, state, cancel, dispatcher);
+        });
+    }
 
-            std::stringstream ss;
+TEST(SchedulingUnitTest, SequentialSchedule)
+{
+    arcana::state_machine_driver driver{};
+    arcana::state_machine_observer sched{ driver };
+    arcana::cancellation_source cancel;
+    arcana::background_dispatcher<32> background;
 
-            WorkOn(ss, sched, one, cancel, background);
-            WorkOn(ss, sched, two, cancel, background);
-            WorkOn(ss, sched, three, cancel, background);
+    arcana::state_machine_state<void> one{ "1" }, two{ "2" }, three{ "3" };
 
-            signal.get_future().get();
+    std::promise<void> signal;
+
+    arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(one, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(two, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(three, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        signal.set_value();
+    });
+
+    std::stringstream ss;
+
+    WorkOn(ss, sched, one, cancel, background);
+    WorkOn(ss, sched, two, cancel, background);
+    WorkOn(ss, sched, three, cancel, background);
+
+    signal.get_future().get();
+    cancel.cancel();
+
+    EXPECT_EQ("123", ss.str());
+}
+
+TEST(SchedulingUnitTest, InvertSequentialSchedule)
+{
+    arcana::state_machine_driver driver{};
+    arcana::state_machine_observer sched{ driver };
+    arcana::cancellation_source cancel;
+    arcana::background_dispatcher<32> background;
+
+    arcana::state_machine_state<void> one{ "1" }, two{ "2" }, three{ "3" };
+
+    std::promise<void> signal;
+
+    std::stringstream ss;
+
+    WorkOn(ss, sched, one, cancel, background);
+    WorkOn(ss, sched, two, cancel, background);
+    WorkOn(ss, sched, three, cancel, background);
+
+    arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(one, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(two, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(three, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        signal.set_value();
+    });
+
+    signal.get_future().get();
+    cancel.cancel();
+
+    EXPECT_EQ("123", ss.str());
+}
+
+TEST(SchedulingUnitTest, LoopSchedule)
+{
+    arcana::state_machine_driver driver{};
+    arcana::state_machine_observer sched{ driver };
+    arcana::cancellation_source cancel;
+    arcana::background_dispatcher<32> background;
+
+    arcana::state_machine_state<void> one{ "1" }, two{ "2" }, three{ "3" };
+
+    std::promise<void> signal;
+
+    make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(one, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(two, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(three, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(one, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(two, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(three, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        signal.set_value();
+    });
+
+    std::stringstream ss;
+
+    WorkOn(ss, sched, one, cancel, background);
+    WorkOn(ss, sched, two, cancel, background);
+    WorkOn(ss, sched, three, cancel, background);
+
+    signal.get_future().get();
+    cancel.cancel();
+
+    EXPECT_EQ("123123", ss.str());
+}
+
+TEST(SchedulingUnitTest, JumpAroundTheGraph)
+{
+    arcana::state_machine_driver driver{};
+    arcana::state_machine_observer sched{ driver };
+    arcana::cancellation_source cancel;
+    arcana::background_dispatcher<32> background;
+
+    arcana::state_machine_state<void> one{ "1" }, two{ "2" }, three{ "3" };
+
+    std::promise<void> signal;
+
+    arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(one, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(three, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(one, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(one, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(two, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(one, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(three, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        signal.set_value();
+    });
+
+    std::stringstream ss;
+
+    WorkOn(ss, sched, one, cancel, background);
+    WorkOn(ss, sched, two, cancel, background);
+    WorkOn(ss, sched, three, cancel, background);
+
+    signal.get_future().get();
+    cancel.cancel();
+
+    EXPECT_EQ("1311213", ss.str());
+}
+
+TEST(SchedulingUnitTest, CancelInOnMethodDoesntBlockSchedule)
+{
+    arcana::state_machine_driver driver{};
+    arcana::state_machine_observer sched{ driver };
+
+    arcana::state_machine_state<void> one{ "One" }, two{ "Two" };
+    arcana::cancellation_source cancel;
+
+    bool ranContinuation = false;
+
+    arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        return driver.move_to(one, arcana::cancellation::none());
+    }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+    {
+        ranContinuation = true;
+    });
+
+    make_task(arcana::inline_scheduler, cancel, [&]() noexcept
+    {
+        return sched.on(one, arcana::inline_scheduler, cancel, [&]() noexcept
+        {
             cancel.cancel();
+        });
+    });
 
-            Assert::AreEqual<std::string>("123", ss.str());
+    EXPECT_TRUE(ranContinuation);
+}
+
+    struct Runtime
+    {
+        arcana::state_machine_driver Driver{};
+        arcana::state_machine_observer Scheduler{ Driver };
+        arcana::manual_dispatcher<32> Dispatcher;
+        Mediator Mediator{ Dispatcher };
+
+        Context Context{ Mediator, Scheduler, Dispatcher };
+
+        std::unique_ptr<InitializationWorker> m_init;
+        std::unique_ptr<TrackingWorker> m_tracking;
+
+        arcana::task<void, std::error_code> Start()
+        {
+            return InitSchedule();
         }
 
-        TEST_METHOD(InvertSequentialSchedule)
+        bool FailedOnce = false;
+        bool Completed = false;
+
+        arcana::task<void, std::error_code> Die()
         {
-            arcana::state_machine_driver driver{};
-            arcana::state_machine_observer sched{ driver };
-            arcana::cancellation_source cancel;
-            arcana::background_dispatcher<32> background;
-
-            arcana::state_machine_state<void> one{ "1" }, two{ "2" }, three{ "3" };
-
-            std::promise<void> signal;
-
-            std::stringstream ss;
-
-            WorkOn(ss, sched, one, cancel, background);
-            WorkOn(ss, sched, two, cancel, background);
-            WorkOn(ss, sched, three, cancel, background);
-
-            arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(one, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(two, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(three, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                signal.set_value();
-            });
-
-            signal.get_future().get();
-            cancel.cancel();
-
-            Assert::AreEqual<std::string>("123", ss.str());
+            return arcana::task_from_error<void>(std::errc::owner_dead);
         }
 
-        TEST_METHOD(LoopSchedule)
+        arcana::task<void, std::error_code> TrackingSchedule()
         {
-            arcana::state_machine_driver driver{};
-            arcana::state_machine_observer sched{ driver };
-            arcana::cancellation_source cancel;
-            arcana::background_dispatcher<32> background;
-
-            arcana::state_machine_state<void> one{ "1" }, two{ "2" }, three{ "3" };
-
-            std::promise<void> signal;
-
-            make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+            if (!m_tracking)
             {
-                return driver.move_to(one, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(two, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(three, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(one, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(two, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(three, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                signal.set_value();
-            });
-
-            std::stringstream ss;
-
-            WorkOn(ss, sched, one, cancel, background);
-            WorkOn(ss, sched, two, cancel, background);
-            WorkOn(ss, sched, three, cancel, background);
-
-            signal.get_future().get();
-            cancel.cancel();
-
-            Assert::AreEqual<std::string>("123123", ss.str());
-        }
-
-        TEST_METHOD(JumpAroundTheGraph)
-        {
-            arcana::state_machine_driver driver{};
-            arcana::state_machine_observer sched{ driver };
-            arcana::cancellation_source cancel;
-            arcana::background_dispatcher<32> background;
-
-            arcana::state_machine_state<void> one{ "1" }, two{ "2" }, three{ "3" };
-
-            std::promise<void> signal;
-
-            arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(one, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(three, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(one, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(one, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(two, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(one, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(three, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                signal.set_value();
-            });
-
-            std::stringstream ss;
-
-            WorkOn(ss, sched, one, cancel, background);
-            WorkOn(ss, sched, two, cancel, background);
-            WorkOn(ss, sched, three, cancel, background);
-
-            signal.get_future().get();
-            cancel.cancel();
-
-            Assert::AreEqual<std::string>("1311213", ss.str());
-        }
-
-        TEST_METHOD(CancelInOnMethodDoesntBlockSchedule)
-        {
-            arcana::state_machine_driver driver{};
-            arcana::state_machine_observer sched{ driver };
-
-            arcana::state_machine_state<void> one{ "One" }, two{ "Two" };
-            arcana::cancellation_source cancel;
-
-            bool ranContinuation = false;
-
-            arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                return driver.move_to(one, arcana::cancellation::none());
-            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-            {
-                ranContinuation = true;
-            });
-
-            make_task(arcana::inline_scheduler, cancel, [&]() noexcept
-            {
-                return sched.on(one, arcana::inline_scheduler, cancel, [&]() noexcept
-                {
-                    cancel.cancel();
-                });
-            });
-
-            Assert::IsTrue(ranContinuation);
-        }
-
-        struct Runtime
-        {
-            arcana::state_machine_driver Driver{};
-            arcana::state_machine_observer Scheduler{ Driver };
-            arcana::manual_dispatcher<32> Dispatcher;
-            Mediator Mediator{ Dispatcher };
-
-            Context Context{ Mediator, Scheduler, Dispatcher };
-
-            std::unique_ptr<InitializationWorker> m_init;
-            std::unique_ptr<TrackingWorker> m_tracking;
-
-            arcana::task<void, std::error_code> Start()
-            {
-                return InitSchedule();
+                m_tracking = std::make_unique<TrackingWorker>(Context);
             }
 
-            bool FailedOnce = false;
-            bool Completed = false;
-
-            arcana::task<void, std::error_code> Die()
+            return arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
             {
-                return arcana::task_from_error<void>(std::errc::owner_dead);
-            }
-
-            arcana::task<void, std::error_code> TrackingSchedule()
+                // do a tracking read
+                return Driver.move_to(TrackingRead, arcana::cancellation::none());
+            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
             {
-                if (!m_tracking)
+                // then a tracking write
+                return Driver.move_to(TrackingWrite, arcana::cancellation::none());
+            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+            {
+                if (!FailedOnce && m_tracking->Iterations >= 2)
                 {
-                    m_tracking = std::make_unique<TrackingWorker>(Context);
-                }
-
-                return arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-                {
-                    // do a tracking read
-                    return Driver.move_to(TrackingRead, arcana::cancellation::none());
-                }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-                {
-                    // then a tracking write
-                    return Driver.move_to(TrackingWrite, arcana::cancellation::none());
-                }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-                {
-                    if (!FailedOnce && m_tracking->Iterations >= 2)
-                    {
-                        return m_tracking->ShutdownAsync().
-                            then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const arcana::expected<void, std::error_code>&) noexcept
-                            {
-                                FailedOnce = true;
-                                m_tracking = nullptr;
-
-                                return InitSchedule();
-                            });
-                    }
-                    else if (FailedOnce && m_tracking->Iterations >= 2)
-                    {
-                        return m_tracking->ShutdownAsync().
-                            then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const arcana::expected<void, std::error_code>&) noexcept
+                    return m_tracking->ShutdownAsync().
+                        then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const arcana::expected<void, std::error_code>&) noexcept
                         {
-                            m_tracking.reset();
+                            FailedOnce = true;
+                            m_tracking = nullptr;
 
-                            return Die();
+                            return InitSchedule();
                         });
-                    }
-                    else
-                    {
-                        return TrackingSchedule();
-                    }
-                });
-            }
-
-            arcana::task<void, std::error_code> InitSchedule()
-            {
-                if (!m_init)
-                {
-                    m_init = std::make_unique<InitializationWorker>(Context);
                 }
-
-                return arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+                else if (FailedOnce && m_tracking->Iterations >= 2)
                 {
-                    return Driver.move_to(TrackingInit, arcana::cancellation::none());
-                }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const bool& initialized) noexcept
+                    return m_tracking->ShutdownAsync().
+                        then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const arcana::expected<void, std::error_code>&) noexcept
+                    {
+                        m_tracking.reset();
+
+                        return Die();
+                    });
+                }
+                else
                 {
-                    if (!initialized)
-                    {
-                        return InitSchedule();
-                    }
-                    else
-                    {
-                        return m_init->ShutdownAsync()
-                            .then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
-                            {
-                                m_init.reset();
-
-                                return TrackingSchedule();
-                            });
-                    }
-                });
-            }
-        };
-
-        TEST_METHOD(DynamicRuntime)
-        {
-            Runtime runtime;
-
-            bool completed = false;
-
-            runtime.Start().then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const arcana::expected<void, std::error_code>& result) noexcept
-            {
-                Assert::IsTrue(result.error() == std::errc::owner_dead);
-                completed = true;
+                    return TrackingSchedule();
+                }
             });
+        }
 
-            do
+        arcana::task<void, std::error_code> InitSchedule()
+        {
+            if (!m_init)
             {
-                if (!completed)
+                m_init = std::make_unique<InitializationWorker>(Context);
+            }
+
+            return arcana::make_task(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+            {
+                return Driver.move_to(TrackingInit, arcana::cancellation::none());
+            }).then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const bool& initialized) noexcept
+            {
+                if (!initialized)
                 {
-                    runtime.Mediator.send<ImageReceived>({});
+                    return InitSchedule();
                 }
-            } while (runtime.Dispatcher.tick(arcana::cancellation::none()));
+                else
+                {
+                    return m_init->ShutdownAsync()
+                        .then(arcana::inline_scheduler, arcana::cancellation::none(), [&]() noexcept
+                        {
+                            m_init.reset();
+
+                            return TrackingSchedule();
+                        });
+                }
+            });
         }
     };
+
+TEST(SchedulingUnitTest, DynamicRuntime)
+{
+    Runtime runtime;
+
+    bool completed = false;
+
+    runtime.Start().then(arcana::inline_scheduler, arcana::cancellation::none(), [&](const arcana::expected<void, std::error_code>& result) noexcept
+    {
+        EXPECT_TRUE(result.error() == std::errc::owner_dead);
+        completed = true;
+    });
+
+    do
+    {
+        if (!completed)
+        {
+            runtime.Mediator.send<ImageReceived>({});
+        }
+    } while (runtime.Dispatcher.tick(arcana::cancellation::none()));
 }
