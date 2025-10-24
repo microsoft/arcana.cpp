@@ -75,7 +75,7 @@ static auto insert_item(arcana::ticketed_collection<int>& items, int i, std::mut
     return items.insert(i, mutex);
 }
 
-    TEST(ContainerUnitTest, TicketedCollectionManipulation)
+TEST(ContainerUnitTest, TicketedCollectionManipulation)
 {
     arcana::ticketed_collection<int> items;
     std::mutex mutex;
