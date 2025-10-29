@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: master
   pull_request:
-    branches: [ master ]
+    branches: master
 
 jobs:
   windows:
@@ -68,10 +68,10 @@ jobs:
     - name: Configure CMake for iOS
       run: |
         cmake -B Build -G Xcode \
-          -D CMAKE_SYSTEM_NAME=iOS \
-          -D CMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
-          -D CMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
-          -D CMAKE_IOS_INSTALL_COMBINED=YES \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
+          -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
+          -DCMAKE_IOS_INSTALL_COMBINED=YES
 
     - name: Build for ${{ matrix.platform }}
       run: |
@@ -100,8 +100,7 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
           -DANDROID_ABI=${{ matrix.abi }} \
           -DANDROID_PLATFORM=android-21 \
-          -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
-          -DARCANA_TESTS=OFF
+          -DCMAKE_BUILD_TYPE=${{ matrix.config }}
       env:
         ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
 
@@ -137,8 +136,7 @@ jobs:
         cmake -B Build \
           -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
           -DCMAKE_C_COMPILER=${{ matrix.cc }} \
-          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
-         
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
 
     - name: Build
       run: |
