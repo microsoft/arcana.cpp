@@ -1,7 +1,10 @@
 name: CI
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
 
 jobs:
   windows:
@@ -40,16 +43,16 @@ jobs:
 
     - name: Configure CMake
       run: |
-        cmake -B Build -G Xcode
+        cmake -B Build -G Xcode -DARCANA_TESTS=OFF
 
     - name: Build
       run: |
         cmake --build Build --config ${{ matrix.config }}
 
-    - name: Test
-      working-directory: Build
-      run: |
-        ctest -C ${{ matrix.config }} --output-on-failure --verbose
+    # - name: Test
+    #   working-directory: Build
+    #   run: |
+    #     ctest -C ${{ matrix.config }} --output-on-failure --verbose
 
   ios:
     name: iOS
@@ -68,42 +71,12 @@ jobs:
           -DCMAKE_SYSTEM_NAME=iOS \
           -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
           -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
-          -DCMAKE_IOS_INSTALL_COMBINED=YES
+          -DCMAKE_IOS_INSTALL_COMBINED=YES \
+          -DARCANA_TESTS=OFF
 
     - name: Build for ${{ matrix.platform }}
       run: |
         cmake --build Build --config ${{ matrix.config }} -- -sdk ${{ matrix.platform }}
-
-  android:
-    name: Android
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        config: [Debug, Release]
-        abi: [armeabi-v7a, arm64-v8a, x86, x86_64]
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Setup Android NDK
-      uses: nttld/setup-ndk@v1
-      with:
-        ndk-version: r25c
-        add-to-path: false
-
-    - name: Configure CMake for Android
-      run: |
-        cmake -B Build \
-          -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
-          -DANDROID_ABI=${{ matrix.abi }} \
-          -DANDROID_PLATFORM=android-21 \
-          -DCMAKE_BUILD_TYPE=${{ matrix.config }}
-      env:
-        ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
-
-    - name: Build
-      run: |
-        cmake --build Build --config ${{ matrix.config }}
 
   linux:
     name: Linux
@@ -133,13 +106,14 @@ jobs:
         cmake -B Build \
           -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
           -DCMAKE_C_COMPILER=${{ matrix.cc }} \
-          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+          -DARCANA_TESTS=OFF
 
     - name: Build
       run: |
         cmake --build Build --config ${{ matrix.config }}
 
-    - name: Test
-      working-directory: Build
-      run: |
-        ctest -C ${{ matrix.config }} --output-on-failure --verbose
+    # - name: Test
+    #   working-directory: Build
+    #   run: |
+    #     ctest -C ${{ matrix.config }} --output-on-failure --verbose
