@@ -97,6 +97,7 @@ if(WIN32)
 
     add_library(arcana ${SOURCES})
 
+    target_include_directories(arcana PUBLIC "${gsl_SOURCE_DIR}/include")
     target_include_directories(arcana PUBLIC "Source/Shared")
     target_include_directories(arcana PUBLIC "Source/Windows")
 
@@ -107,6 +108,7 @@ if(WIN32)
 else()
     add_library(arcana INTERFACE)
 
+    target_include_directories(arcana INTERFACE "${gsl_SOURCE_DIR}/include")
     target_include_directories(arcana INTERFACE "Source/Shared")
 
     if(ANDROID)
@@ -117,8 +119,6 @@ else()
         target_include_directories(arcana INTERFACE "Source/Unix")
     endif()
 endif()
-
-target_include_directories(arcana PUBLIC "${gsl_SOURCE_DIR}/include")
 
 if(ARCANA_TESTS)
     FetchContent_MakeAvailable(googletest)
