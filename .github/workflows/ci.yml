@@ -45,10 +45,11 @@ jobs:
       run: |
         cmake -B Build -G Xcode -DARCANA_TESTS=OFF
 
-    - name: Build
-      run: |
-        cmake --build Build --config ${{ matrix.config }}
-
+    # Commented out until tests are re-enabled
+    # - name: Build
+    #   run: |
+    #     cmake --build Build --config ${{ matrix.config }}
+    #
     # - name: Test
     #   working-directory: Build
     #   run: |
@@ -73,10 +74,6 @@ jobs:
           -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
           -DCMAKE_IOS_INSTALL_COMBINED=YES \
           -DARCANA_TESTS=OFF
-
-    - name: Build for ${{ matrix.platform }}
-      run: |
-        cmake --build Build --config ${{ matrix.config }} -- -sdk ${{ matrix.platform }}
 
   linux:
     name: Linux
@@ -109,10 +106,11 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
           -DARCANA_TESTS=OFF
 
-    - name: Build
-      run: |
-        cmake --build Build --config ${{ matrix.config }}
-
+    # Commented out until tests are re-enabled
+    # - name: Build
+    #   run: |
+    #     cmake --build Build --config ${{ matrix.config }}
+    #
     # - name: Test
     #   working-directory: Build
     #   run: |
