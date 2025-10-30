@@ -1,3 +1,5 @@
+[![CI](https://github.com/microsoft/arcana.cpp/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/microsoft/arcana.cpp/actions/workflows/ci.yml)
+
 # Arcana.cpp
 
 Arcana is a collection of general purpose C++ utilities with no code that is specific to a particular project or specialized technology area, sort of like an extension to the STL.  At present, the most notable of these utilities is the Arcana task library.
@@ -76,3 +78,4 @@ receive a response within 24 hours. If for some reason you do not, please follow
 email to ensure we received your original message. Further information, including the
 [MSRC PGP](https://technet.microsoft.com/en-us/security/dn606155) key, can be found in
 the [Security TechCenter](https://technet.microsoft.com/en-us/security/default).
+
