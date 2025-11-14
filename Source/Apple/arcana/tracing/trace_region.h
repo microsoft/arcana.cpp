@@ -4,12 +4,20 @@
 
 #pragma once
 
+#include <atomic>
 #include <os/signpost.h>
+#include <os/log.h>
 
 #define SIGNPOST_NAME "trace_region"
 
 namespace arcana
 {
+    enum class trace_level
+    {
+        mark,
+        log,
+    };
+
     class trace_region final
     {
     public:
@@ -22,6 +30,10 @@ namespace arcana
         {
             if (m_id != OS_SIGNPOST_ID_NULL)
             {
+                if (s_logEnabled)
+                {
+                    os_log_debug(s_log, "[trace_region] BEGIN %s (id=%llu, this=%p)", name, m_id, this);
+                }
                 os_signpost_interval_begin(s_log, m_id, SIGNPOST_NAME, "%s", name);
             }
         }
@@ -36,6 +48,10 @@ namespace arcana
         {
             if (m_id != OS_SIGNPOST_ID_NULL)
             {
+                if (s_logEnabled)
+                {
+                    os_log_debug(s_log, "[trace_region] END (id=%llu, this=%p)", m_id, this);
+                }
                 os_signpost_interval_end(s_log, m_id, SIGNPOST_NAME);
             }
         }
@@ -44,6 +60,10 @@ namespace arcana
         {
             if (m_id != OS_SIGNPOST_ID_NULL)
             {
+                if (s_logEnabled)
+                {
+                    os_log_debug(s_log, "[trace_region] END (move) (id=%llu, this=%p)", m_id, this);
+                }
                 os_signpost_interval_end(s_log, m_id, SIGNPOST_NAME);
             }
 
@@ -53,18 +73,21 @@ namespace arcana
             return *this;
         }
 
-        static void enable()
+        static void enable(trace_level level = trace_level::mark)
         {
             s_enabled = true;
+            s_logEnabled = level == trace_level::log;
         }
 
         static void disable()
         {
             s_enabled = false;
+            s_logEnabled = false;
         }
 
     private:
         static inline std::atomic<bool> s_enabled{false};
+        static inline std::atomic<bool> s_logEnabled{false};
         static inline os_log_t s_log{os_log_create("arcana", OS_LOG_CATEGORY_POINTS_OF_INTEREST)};
         os_signpost_id_t m_id;
     };
