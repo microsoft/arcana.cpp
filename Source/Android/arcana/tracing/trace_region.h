@@ -6,6 +6,12 @@
 
 namespace arcana
 {
+    enum class trace_level
+    {
+        mark,
+        log,
+    };
+
     // TODO: https://developer.android.com/topic/performance/tracing/custom-events-native
     //       https://developer.android.com/ndk/reference/group/tracing
     class trace_region final
@@ -27,7 +33,7 @@ namespace arcana
 
         trace_region& operator=(trace_region&&) = default;
 
-        static void enable(bool = true)
+        static void enable(trace_level = trace_level::mark)
         {
         }
 

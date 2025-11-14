@@ -12,6 +12,12 @@
 
 namespace arcana
 {
+    enum class trace_level
+    {
+        mark,
+        log,
+    };
+
     class trace_region final
     {
     public:
@@ -67,10 +73,10 @@ namespace arcana
             return *this;
         }
 
-        static void enable(bool withLogging = false)
+        static void enable(trace_level level = trace_level::mark)
         {
             s_enabled = true;
-            s_logEnabled = withLogging;
+            s_logEnabled = level == trace_level::log;
         }
 
         static void disable()
