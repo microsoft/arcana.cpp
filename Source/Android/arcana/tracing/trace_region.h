@@ -27,7 +27,7 @@ namespace arcana
 
         trace_region& operator=(trace_region&&) = default;
 
-        static void enable()
+        static void enable(bool = true)
         {
         }
 
