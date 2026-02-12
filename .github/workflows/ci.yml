@@ -96,9 +96,9 @@ jobs:
           - compiler: gcc-11
             cc: gcc-11
             cxx: g++-11
-          - compiler: clang-12
-            cc: clang-12
-            cxx: clang++-12
+          - compiler: clang-14
+            cc: clang-14
+            cxx: clang++-14
 
     steps:
     - uses: actions/checkout@v4
