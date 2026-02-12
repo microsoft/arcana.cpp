@@ -43,7 +43,7 @@ jobs:
 
     - name: Configure CMake
       run: |
-        cmake -B Build -G Xcode -DARCANA_TESTS=OFF
+        cmake -B Build -G Xcode
 
     - name: Build
       run: |
@@ -106,8 +106,7 @@ jobs:
         cmake -B Build \
           -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
           -DCMAKE_C_COMPILER=${{ matrix.cc }} \
-          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
-          -DARCANA_TESTS=OFF
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
 
     - name: Build
       run: |
