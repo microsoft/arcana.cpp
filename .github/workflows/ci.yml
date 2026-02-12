@@ -91,7 +91,7 @@ jobs:
     strategy:
       matrix:
         config: [Debug, Release]
-        compiler: [gcc-11, clang-12]
+        compiler: [gcc-11, clang-14]
         include:
           - compiler: gcc-11
             cc: gcc-11
