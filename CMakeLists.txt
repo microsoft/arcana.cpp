@@ -172,4 +172,20 @@ if(ARCANA_TESTS)
     set_property(TARGET gmock_main PROPERTY FOLDER Dependencies)
     set_property(TARGET gtest PROPERTY FOLDER Dependencies)
     set_property(TARGET gtest_main PROPERTY FOLDER Dependencies)
+
+    if(WIN32)
+        # Standalone executable that uses _CrtDumpMemoryLeaks to verify
+        # cancellation::none() does not leak due to the no_destroy pattern.
+        add_executable(cancellation_leak_test
+            "Source/Windows.Test/Threading/CancellationMemoryLeakTest.cpp")
+
+        target_include_directories(cancellation_leak_test
+            PRIVATE "Source/Shared"
+            PRIVATE "Source/Windows")
+
+        target_link_libraries(cancellation_leak_test
+            PRIVATE arcana)
+
+        add_test(NAME CancellationMemoryLeakTest COMMAND cancellation_leak_test)
+    endif()
 endif()
