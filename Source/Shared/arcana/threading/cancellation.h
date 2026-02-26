@@ -3,12 +3,11 @@
 #include "arcana/containers/ticketed_collection.h"
 
 #include <algorithm>
-#include <cassert>
 #include <atomic>
-#include <memory>
-#include <vector>
-
 #include <functional>
+#include <cassert>
+#include <memory>
+#include <optional>
 #include <vector>
 
 namespace arcana
@@ -25,7 +24,7 @@ namespace arcana
 
         virtual bool cancelled() const = 0;
 
-        void throw_if_cancellation_requested()
+        void throw_if_cancellation_requested() const
         {
             if (cancelled())
             {
@@ -60,7 +59,7 @@ namespace arcana
 
         virtual ~cancellation()
         {
-            assert(m_listeners.empty() && "you're destroying the listener collection and you still have listeners");
+            assert((!m_listeners.has_value() || m_listeners->empty()) && "you're destroying the listener collection and you still have listeners");
         }
 
         template<typename CallableT>
@@ -68,14 +67,19 @@ namespace arcana
         {
             std::lock_guard<std::mutex> guard{ m_mutex };
 
+            if (!m_listeners.has_value())
+            {
+                m_listeners.emplace();
+            }
+
             if (m_signaled)
             {
                 copied = std::forward<CallableT>(callback);
-                return m_listeners.insert(copied, m_mutex);
+                return m_listeners->insert(copied, m_mutex);
             }
             else
             {
-                return m_listeners.insert(std::forward<CallableT>(callback), m_mutex);
+                return m_listeners->insert(std::forward<CallableT>(callback), m_mutex);
             }
         }
 
@@ -86,8 +90,11 @@ namespace arcana
             {
                 std::lock_guard<std::mutex> guard{ m_mutex };
 
-                listeners.reserve(m_listeners.size());
-                std::copy(m_listeners.begin(), m_listeners.end(), std::back_inserter(listeners));
+                if (m_listeners.has_value())
+                {
+                    listeners.reserve(m_listeners->size());
+                    std::copy(m_listeners->begin(), m_listeners->end(), std::back_inserter(listeners));
+                }
 
                 m_signaled = true;
             }
@@ -97,13 +104,19 @@ namespace arcana
             // then a child function does the same, the child
             // cancellation runs first. This avoids ownership
             // semantic issues.
-            for(auto itr = listeners.rbegin(); itr != listeners.rend(); ++itr)
+            for (auto itr = listeners.rbegin(); itr != listeners.rend(); ++itr)
+            {
                 (*itr)();
+            }
         }
 
     private:
         mutable std::mutex m_mutex;
-        ticketed_collection<std::function<void()>> m_listeners;
+        // std::optional is used here because the none() singleton is held in a no_destroy wrapper whose destructor
+        // never runs. The underlying std::vector inside ticketed_collection allocates memory in debug builds on some
+        // platforms, and that allocation would be a leak since no_destroy never frees it. Using std::optional will
+        // delay the allocation until it's actually needed, which is never for the none() singleton.
+        std::optional<ticketed_collection<std::function<void()>>> m_listeners;
         bool m_signaled = false;
     };
 
