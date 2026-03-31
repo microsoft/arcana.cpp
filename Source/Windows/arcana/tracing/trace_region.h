@@ -17,15 +17,12 @@
 //
 // To capture and view traces (from an elevated command prompt):
 //   1. Start an ETW trace session:
-//      tracelog -start ArcanaTrace -f arcana.etl -guid #B2A07E6E-A49F-4C4F-B9D2-8D3E5C7F1A2B
+//      logman create trace ArcanaTrace -p "{B2A07E6E-A49F-4C4F-B9D2-8D3E5C7F1A2B}" -o arcana.etl -ets
 //   2. Run the application
 //   3. Stop the trace:
-//      tracelog -stop ArcanaTrace
-//   4. View the trace in Windows Performance Analyzer (WPA):
-//      wpa arcana.etl
-//      Look for "Arcana.TraceRegion" in the Generic Events table.
-//      Alternatively, decode to text:
-//      tracefmt -o arcana.txt arcana.etl
+//      logman stop ArcanaTrace -ets
+//   4. Open arcana.etl in Windows Performance Analyzer (WPA) or PerfView.
+//      In WPA, look for "Arcana.TraceRegion" in the Generic Events table.
 //
 // Debug log output (at trace_level::log) goes to OutputDebugStringA,
 // visible in the Visual Studio Output window or DebugView (SysInternals).
