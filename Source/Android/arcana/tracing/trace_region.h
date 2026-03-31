@@ -12,7 +12,8 @@
 // which breaks when begin and end occur on different threads.
 //
 // When targeting minSdkVersion < 29, the async functions are resolved at runtime
-// via dlsym. If unavailable (device below API 29), falls back to the sync API.
+// via dlsym. If unavailable (device below API 29), ATrace is silently skipped
+// (logcat output at trace_level::log still works).
 //
 // NOTE: Async trace sections may not be visible in Android Studio's Profiler UI.
 // To view them, capture a trace with Perfetto:
@@ -123,13 +124,8 @@ namespace arcana
 #if __ANDROID_MIN_SDK_VERSION__ >= 29
             ATrace_beginAsyncSection(name, cookie);
 #else
-            // Prefer async API if available at runtime (device is API 29+).
-            // Fall back to sync API which uses a per-thread stack — correct for
-            // same-thread RAII, but cross-thread begin/end pairs won't match.
             if (s_beginAsync)
                 s_beginAsync(name, cookie);
-            else
-                ATrace_beginSection(name);
 #endif
         }
 
@@ -140,8 +136,6 @@ namespace arcana
 #else
             if (s_endAsync)
                 s_endAsync(name, cookie);
-            else
-                ATrace_endSection();
 #endif
         }
 
