@@ -26,8 +26,6 @@
 #include <os/signpost.h>
 #include <os/log.h>
 
-#define SIGNPOST_NAME "trace_region"
-
 namespace arcana
 {
     enum class trace_level
@@ -52,7 +50,7 @@ namespace arcana
                 {
                     os_log_debug(s_log, "[trace_region] BEGIN %s (id=%llu, this=%p)", name, m_id, this);
                 }
-                os_signpost_interval_begin(s_log, m_id, SIGNPOST_NAME, "%s", name);
+                os_signpost_interval_begin(s_log, m_id, "trace_region", "%s", name);
             }
         }
 
@@ -70,7 +68,7 @@ namespace arcana
                 {
                     os_log_debug(s_log, "[trace_region] END (id=%llu, this=%p)", m_id, this);
                 }
-                os_signpost_interval_end(s_log, m_id, SIGNPOST_NAME);
+                os_signpost_interval_end(s_log, m_id, "trace_region");
             }
         }
 
@@ -87,7 +85,7 @@ namespace arcana
                 {
                     os_log_debug(s_log, "[trace_region] END (move) (id=%llu, this=%p)", m_id, this);
                 }
-                os_signpost_interval_end(s_log, m_id, SIGNPOST_NAME);
+                os_signpost_interval_end(s_log, m_id, "trace_region");
             }
 
             m_id = other.m_id;

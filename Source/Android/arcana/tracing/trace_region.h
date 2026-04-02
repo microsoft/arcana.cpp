@@ -36,8 +36,6 @@
 #include <dlfcn.h>
 #endif
 
-#define TRACE_TAG "trace_region"
-
 namespace arcana
 {
     enum class trace_level
@@ -61,7 +59,7 @@ namespace arcana
             {
                 if (s_logEnabled)
                 {
-                    __android_log_print(ANDROID_LOG_DEBUG, TRACE_TAG, "[trace_region] BEGIN %s (cookie=%d, this=%p)", m_name.c_str(), m_cookie, static_cast<const void*>(this));
+                    __android_log_print(ANDROID_LOG_DEBUG, "trace_region", "[trace_region] BEGIN %s (cookie=%d, this=%p)", m_name.c_str(), m_cookie, static_cast<const void*>(this));
                 }
                 traceBegin(m_name.c_str(), m_cookie);
             }
@@ -82,7 +80,7 @@ namespace arcana
             {
                 if (s_logEnabled)
                 {
-                    __android_log_print(ANDROID_LOG_DEBUG, TRACE_TAG, "[trace_region] END (cookie=%d, this=%p)", m_cookie, static_cast<const void*>(this));
+                    __android_log_print(ANDROID_LOG_DEBUG, "trace_region", "[trace_region] END (cookie=%d, this=%p)", m_cookie, static_cast<const void*>(this));
                 }
                 traceEnd(m_name.c_str(), m_cookie);
             }
@@ -99,7 +97,7 @@ namespace arcana
             {
                 if (s_logEnabled)
                 {
-                    __android_log_print(ANDROID_LOG_DEBUG, TRACE_TAG, "[trace_region] END (move) (cookie=%d, this=%p)", m_cookie, static_cast<const void*>(this));
+                    __android_log_print(ANDROID_LOG_DEBUG, "trace_region", "[trace_region] END (move) (cookie=%d, this=%p)", m_cookie, static_cast<const void*>(this));
                 }
                 traceEnd(m_name.c_str(), m_cookie);
             }
