@@ -33,6 +33,7 @@
 
 #include <atomic>
 #include <cstdio>
+#include <memory>
 #include <string>
 #include <windows.h>
 #include <evntrace.h>
@@ -71,7 +72,8 @@ namespace arcana
         trace_region(const char* name) :
             m_cookie{s_enabled ? s_nextCookie.fetch_add(1, std::memory_order_relaxed) : 0},
             m_name{m_cookie != 0 ? name : ""},
-            m_activityId{cookieToGuid(m_cookie)}
+            m_activityId{cookieToGuid(m_cookie)},
+            m_registration{m_cookie != 0 ? s_registration : nullptr}
         {
             if (m_cookie != 0)
             {
@@ -96,7 +98,8 @@ namespace arcana
         trace_region(trace_region&& other) :
             m_cookie{other.m_cookie},
             m_name{std::move(other.m_name)},
-            m_activityId{other.m_activityId}
+            m_activityId{other.m_activityId},
+            m_registration{std::move(other.m_registration)}
         {
             other.m_cookie = 0;
         }
@@ -143,6 +146,7 @@ namespace arcana
             m_cookie = other.m_cookie;
             m_name = std::move(other.m_name);
             m_activityId = other.m_activityId;
+            m_registration = std::move(other.m_registration);
             other.m_cookie = 0;
 
             return *this;
@@ -151,6 +155,10 @@ namespace arcana
         static void enable(trace_level level = trace_level::mark)
         {
             TraceLoggingRegister(detail::g_traceRegionProvider);
+            // Create a shared_ptr whose custom deleter calls TraceLoggingUnregister.
+            // Each active trace_region holds a copy, so the provider stays registered
+            // until disable() is called AND all outstanding regions are destroyed.
+            s_registration = std::make_shared<ProviderRegistration>();
             s_enabled = true;
             s_logEnabled = level == trace_level::log;
         }
@@ -159,10 +167,23 @@ namespace arcana
         {
             s_enabled = false;
             s_logEnabled = false;
-            TraceLoggingUnregister(detail::g_traceRegionProvider);
+            // Release our ref. If active trace_regions still hold copies,
+            // the provider stays registered until their destructors run.
+            s_registration.reset();
         }
 
     private:
+        // RAII guard for provider registration. When the last shared_ptr to this
+        // object is released, the provider is unregistered. This ensures the
+        // provider stays registered as long as any trace_region is alive.
+        struct ProviderRegistration
+        {
+            ~ProviderRegistration()
+            {
+                TraceLoggingUnregister(detail::g_traceRegionProvider);
+            }
+        };
+
         // Derives a deterministic GUID from the cookie for ETW activity correlation.
         // Only needs to be unique within a single trace session.
         static GUID cookieToGuid(int32_t cookie)
@@ -175,6 +196,7 @@ namespace arcana
         static inline std::atomic<bool> s_enabled{false};
         static inline std::atomic<bool> s_logEnabled{false};
         static inline std::atomic<int32_t> s_nextCookie{1};
+        static inline std::shared_ptr<ProviderRegistration> s_registration;
 
         // Cookie uniquely identifies this trace interval, analogous to
         // os_signpost_id_t on Apple. A cookie of 0 means the region is inactive.
@@ -186,5 +208,9 @@ namespace arcana
         // Activity GUID derived from cookie, used by ETW to correlate start/stop
         // events into duration spans in WPA.
         GUID m_activityId;
+        // Ref-counted handle to the provider registration. Ensures the provider
+        // stays registered until this region emits its stop event, even if
+        // disable() is called while regions are still alive.
+        std::shared_ptr<ProviderRegistration> m_registration;
     };
 }
