@@ -76,6 +76,11 @@ namespace arcana
 
         trace_region& operator=(trace_region&& other)
         {
+            if (this == &other)
+            {
+                return *this;
+            }
+
             if (m_id != OS_SIGNPOST_ID_NULL)
             {
                 if (s_logEnabled)

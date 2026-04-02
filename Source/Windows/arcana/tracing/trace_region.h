@@ -126,6 +126,11 @@ namespace arcana
 
         trace_region& operator=(trace_region&& other)
         {
+            if (this == &other)
+            {
+                return *this;
+            }
+
             if (m_cookie != 0)
             {
                 if (s_logEnabled)
