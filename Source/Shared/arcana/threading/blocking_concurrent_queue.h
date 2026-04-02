@@ -28,6 +28,9 @@ namespace arcana
         inline std::function<void()> beforeWaitCallback{[]() {}};
     }
 
+    // Set a callback to be invoked while holding the queue mutex, right before
+    // condition_variable::wait(). This is used for deterministic testing of
+    // lost-wakeup race conditions. Pass an empty lambda [](){} to reset.
     inline void set_before_wait_callback(std::function<void()> callback)
     {
         detail::beforeWaitCallback = std::move(callback);
