@@ -3,12 +3,34 @@
 #include "cancellation.h"
 
 #include <atomic>
+#include <condition_variable>
+#include <limits>
 #include <mutex>
 #include <queue>
-#include <condition_variable>
+#include <utility>
+#include <vector>
+
+#ifdef ARCANA_TESTING_HOOKS
+#include <functional>
+#endif
 
 namespace arcana
 {
+#ifdef ARCANA_TESTING_HOOKS
+    namespace detail
+    {
+        inline std::function<void()> beforeWaitCallback{[]() {}};
+    }
+
+    // Set a callback to be invoked while holding the queue mutex, right before
+    // condition_variable::wait(). This is used for deterministic testing of
+    // lost-wakeup race conditions. Pass an empty lambda [](){} to reset.
+    inline void set_before_wait_callback(std::function<void()> callback)
+    {
+        detail::beforeWaitCallback = std::move(callback);
+    }
+#endif
+
     template<typename T, size_t max_size = std::numeric_limits<size_t>::max()>
     class blocking_concurrent_queue
     {
@@ -95,6 +117,9 @@ namespace arcana
             {
                 while (!cancel.cancelled() && m_data.empty())
                 {
+#ifdef ARCANA_TESTING_HOOKS
+                    detail::beforeWaitCallback();
+#endif
                     m_dataReady.wait(lock);
                 }
             }
@@ -116,6 +141,9 @@ namespace arcana
             {
                 while (!cancel.cancelled() && m_data.empty())
                 {
+#ifdef ARCANA_TESTING_HOOKS
+                    detail::beforeWaitCallback();
+#endif
                     m_dataReady.wait(lock);
                 }
             }
