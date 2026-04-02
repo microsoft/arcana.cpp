@@ -19,12 +19,6 @@ namespace arcana
 #ifdef ARCANA_TESTING_HOOKS
     namespace detail
     {
-        // Callback invoked while holding the queue mutex, right before
-        // condition_variable::wait(). Sleeping here widens the race window
-        // for lost-wakeup bugs: code that notifies without the mutex will
-        // lose the signal, while code that coordinates through push() (which
-        // acquires the mutex) will block until wait() is entered and then
-        // deliver the notification correctly.
         inline std::function<void()> beforeWaitCallback{[]() {}};
     }
 
