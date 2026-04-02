@@ -201,11 +201,12 @@ namespace arcana
 
         // Derives a deterministic GUID from the cookie for ETW activity correlation.
         // Only needs to be unique within a single trace session.
+        // Fixed bytes are intentionally different from the provider GUID to avoid
+        // collisions when the cookie happens to match the provider's Data1.
         static GUID cookieToGuid(int32_t cookie)
         {
-            // Use the provider GUID as a base, with the cookie in Data1.
-            return {static_cast<unsigned long>(cookie), 0xA49F, 0x4C4F,
-                    {0xB9, 0xD2, 0x8D, 0x3E, 0x5C, 0x7F, 0x1A, 0x2B}};
+            return {static_cast<unsigned long>(cookie), 0x1E3A, 0x4B5C,
+                    {0xA7, 0xD0, 0x6F, 0x2E, 0x9C, 0x8B, 0x3D, 0x14}};
         }
 
         static inline std::atomic<bool> s_enabled{false};
