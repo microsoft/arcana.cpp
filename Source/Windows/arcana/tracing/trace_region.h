@@ -159,6 +159,11 @@ namespace arcana
 
         static void enable(trace_level level = trace_level::mark)
         {
+            if (s_enabled)
+            {
+                return;
+            }
+
             TraceLoggingRegister(detail::g_traceRegionProvider);
             // Create a shared_ptr whose custom deleter calls TraceLoggingUnregister.
             // Each active trace_region holds a copy, so the provider stays registered
@@ -170,6 +175,11 @@ namespace arcana
 
         static void disable()
         {
+            if (!s_enabled)
+            {
+                return;
+            }
+
             s_enabled = false;
             s_logEnabled = false;
             // Release our ref. If active trace_regions still hold copies,

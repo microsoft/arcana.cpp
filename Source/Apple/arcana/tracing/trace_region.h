@@ -96,12 +96,22 @@ namespace arcana
 
         static void enable(trace_level level = trace_level::mark)
         {
+            if (s_enabled)
+            {
+                return;
+            }
+
             s_enabled = true;
             s_logEnabled = level == trace_level::log;
         }
 
         static void disable()
         {
+            if (!s_enabled)
+            {
+                return;
+            }
+
             s_enabled = false;
             s_logEnabled = false;
         }
