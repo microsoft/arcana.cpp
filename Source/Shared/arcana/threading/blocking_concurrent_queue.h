@@ -10,13 +10,13 @@
 #include <utility>
 #include <vector>
 
-#ifdef ARCANA_TESTING_HOOKS
+#ifdef ARCANA_TEST_HOOKS
 #include <functional>
 #endif
 
 namespace arcana
 {
-#ifdef ARCANA_TESTING_HOOKS
+#ifdef ARCANA_TEST_HOOKS
     namespace test_hooks::blocking_concurrent_queue
     {
         namespace detail
@@ -120,7 +120,7 @@ namespace arcana
             {
                 while (!cancel.cancelled() && m_data.empty())
                 {
-#ifdef ARCANA_TESTING_HOOKS
+#ifdef ARCANA_TEST_HOOKS
                     test_hooks::blocking_concurrent_queue::detail::beforeWaitCallback();
 #endif
                     m_dataReady.wait(lock);
@@ -144,7 +144,7 @@ namespace arcana
             {
                 while (!cancel.cancelled() && m_data.empty())
                 {
-#ifdef ARCANA_TESTING_HOOKS
+#ifdef ARCANA_TEST_HOOKS
                     test_hooks::blocking_concurrent_queue::detail::beforeWaitCallback();
 #endif
                     m_dataReady.wait(lock);
