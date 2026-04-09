@@ -17,7 +17,7 @@
 namespace arcana
 {
 #ifdef ARCANA_TESTING_HOOKS
-    namespace test_hooks::dispatcher
+    namespace test_hooks::blocking_concurrent_queue
     {
         namespace detail
         {
@@ -121,7 +121,7 @@ namespace arcana
                 while (!cancel.cancelled() && m_data.empty())
                 {
 #ifdef ARCANA_TESTING_HOOKS
-                    test_hooks::dispatcher::detail::beforeWaitCallback();
+                    test_hooks::blocking_concurrent_queue::detail::beforeWaitCallback();
 #endif
                     m_dataReady.wait(lock);
                 }
@@ -145,7 +145,7 @@ namespace arcana
                 while (!cancel.cancelled() && m_data.empty())
                 {
 #ifdef ARCANA_TESTING_HOOKS
-                    test_hooks::dispatcher::detail::beforeWaitCallback();
+                    test_hooks::blocking_concurrent_queue::detail::beforeWaitCallback();
 #endif
                     m_dataReady.wait(lock);
                 }
