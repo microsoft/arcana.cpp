@@ -17,17 +17,20 @@
 namespace arcana
 {
 #ifdef ARCANA_TESTING_HOOKS
-    namespace detail
+    namespace test_hooks::dispatcher
     {
-        inline std::function<void()> beforeWaitCallback{[]() {}};
-    }
+        namespace detail
+        {
+            inline std::function<void()> beforeWaitCallback{[]() {}};
+        }
 
-    // Set a callback to be invoked while holding the queue mutex, right before
-    // condition_variable::wait(). This is used for deterministic testing of
-    // lost-wakeup race conditions. Pass an empty lambda [](){} to reset.
-    inline void set_before_wait_callback(std::function<void()> callback)
-    {
-        detail::beforeWaitCallback = std::move(callback);
+        // Set a callback to be invoked while holding the queue mutex, right before
+        // condition_variable::wait(). This is used for deterministic testing of
+        // lost-wakeup race conditions. Pass an empty lambda [](){} to reset.
+        inline void set_before_wait_callback(std::function<void()> callback)
+        {
+            detail::beforeWaitCallback = std::move(callback);
+        }
     }
 #endif
 
@@ -118,7 +121,7 @@ namespace arcana
                 while (!cancel.cancelled() && m_data.empty())
                 {
 #ifdef ARCANA_TESTING_HOOKS
-                    detail::beforeWaitCallback();
+                    test_hooks::dispatcher::detail::beforeWaitCallback();
 #endif
                     m_dataReady.wait(lock);
                 }
@@ -142,7 +145,7 @@ namespace arcana
                 while (!cancel.cancelled() && m_data.empty())
                 {
 #ifdef ARCANA_TESTING_HOOKS
-                    detail::beforeWaitCallback();
+                    test_hooks::dispatcher::detail::beforeWaitCallback();
 #endif
                     m_dataReady.wait(lock);
                 }
