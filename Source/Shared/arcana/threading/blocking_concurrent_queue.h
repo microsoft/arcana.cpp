@@ -10,24 +10,27 @@
 #include <utility>
 #include <vector>
 
-#ifdef ARCANA_TESTING_HOOKS
+#ifdef ARCANA_TEST_HOOKS
 #include <functional>
 #endif
 
 namespace arcana
 {
-#ifdef ARCANA_TESTING_HOOKS
-    namespace detail
+#ifdef ARCANA_TEST_HOOKS
+    namespace test_hooks::blocking_concurrent_queue
     {
-        inline std::function<void()> beforeWaitCallback{[]() {}};
-    }
+        namespace detail
+        {
+            inline std::function<void()> beforeWaitCallback{[]() {}};
+        }
 
-    // Set a callback to be invoked while holding the queue mutex, right before
-    // condition_variable::wait(). This is used for deterministic testing of
-    // lost-wakeup race conditions. Pass an empty lambda [](){} to reset.
-    inline void set_before_wait_callback(std::function<void()> callback)
-    {
-        detail::beforeWaitCallback = std::move(callback);
+        // Set a callback to be invoked while holding the queue mutex, right before
+        // condition_variable::wait(). This is used for deterministic testing of
+        // lost-wakeup race conditions. Pass an empty lambda [](){} to reset.
+        inline void set_before_wait_callback(std::function<void()> callback)
+        {
+            detail::beforeWaitCallback = std::move(callback);
+        }
     }
 #endif
 
@@ -117,8 +120,8 @@ namespace arcana
             {
                 while (!cancel.cancelled() && m_data.empty())
                 {
-#ifdef ARCANA_TESTING_HOOKS
-                    detail::beforeWaitCallback();
+#ifdef ARCANA_TEST_HOOKS
+                    test_hooks::blocking_concurrent_queue::detail::beforeWaitCallback();
 #endif
                     m_dataReady.wait(lock);
                 }
@@ -141,8 +144,8 @@ namespace arcana
             {
                 while (!cancel.cancelled() && m_data.empty())
                 {
-#ifdef ARCANA_TESTING_HOOKS
-                    detail::beforeWaitCallback();
+#ifdef ARCANA_TEST_HOOKS
+                    test_hooks::blocking_concurrent_queue::detail::beforeWaitCallback();
 #endif
                     m_dataReady.wait(lock);
                 }
