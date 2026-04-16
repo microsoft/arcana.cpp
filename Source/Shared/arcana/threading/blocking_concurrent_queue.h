@@ -21,6 +21,7 @@ namespace arcana
     {
         namespace detail
         {
+            inline std::mutex callbackMutex;
             inline std::function<void()> beforeWaitCallback{[]() {}};
         }
 
@@ -29,6 +30,7 @@ namespace arcana
         // lost-wakeup race conditions. Pass an empty lambda [](){} to reset.
         inline void set_before_wait_callback(std::function<void()> callback)
         {
+            std::lock_guard<std::mutex> lock{detail::callbackMutex};
             detail::beforeWaitCallback = std::move(callback);
         }
     }
@@ -121,7 +123,14 @@ namespace arcana
                 while (!cancel.cancelled() && m_data.empty())
                 {
 #ifdef ARCANA_TEST_HOOKS
-                    test_hooks::blocking_concurrent_queue::detail::beforeWaitCallback();
+                    {
+                        std::function<void()> cb;
+                        {
+                            std::lock_guard<std::mutex> cbLock{test_hooks::blocking_concurrent_queue::detail::callbackMutex};
+                            cb = test_hooks::blocking_concurrent_queue::detail::beforeWaitCallback;
+                        }
+                        cb();
+                    }
 #endif
                     m_dataReady.wait(lock);
                 }
@@ -145,7 +154,14 @@ namespace arcana
                 while (!cancel.cancelled() && m_data.empty())
                 {
 #ifdef ARCANA_TEST_HOOKS
-                    test_hooks::blocking_concurrent_queue::detail::beforeWaitCallback();
+                    {
+                        std::function<void()> cb;
+                        {
+                            std::lock_guard<std::mutex> cbLock{test_hooks::blocking_concurrent_queue::detail::callbackMutex};
+                            cb = test_hooks::blocking_concurrent_queue::detail::beforeWaitCallback;
+                        }
+                        cb();
+                    }
 #endif
                     m_dataReady.wait(lock);
                 }
