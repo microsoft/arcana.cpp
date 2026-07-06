@@ -11,7 +11,7 @@ FetchContent_Declare(googletest
     GIT_TAG v1.14.0)
 FetchContent_Declare(GSL
     GIT_REPOSITORY https://github.com/Microsoft/GSL.git
-    GIT_TAG v4.0.0)
+    GIT_TAG v4.2.2)
 
 # --------------------------------------------------
 
