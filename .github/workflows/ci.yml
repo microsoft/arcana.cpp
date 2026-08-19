@@ -16,7 +16,7 @@ jobs:
         arch: [x64, Win32]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
     - name: Configure CMake
       run: |
@@ -39,7 +39,7 @@ jobs:
         config: [Debug, Release]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
     - name: Configure CMake
       run: |
@@ -64,7 +64,7 @@ jobs:
         platform: [iphoneos, iphonesimulator]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
     - name: Configure CMake for iOS
       run: |
@@ -91,7 +91,7 @@ jobs:
             cxx: clang++-14
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
     - name: Install dependencies
       run: |
