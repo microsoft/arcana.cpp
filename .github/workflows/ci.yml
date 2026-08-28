@@ -10,6 +10,7 @@ jobs:
   windows:
     name: Windows
     runs-on: windows-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         config: [Debug, Release]
@@ -34,6 +35,7 @@ jobs:
   macos:
     name: macOS
     runs-on: macos-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         config: [Debug, Release]
@@ -58,6 +60,7 @@ jobs:
   ios:
     name: iOS
     runs-on: macos-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         config: [Debug, Release]
@@ -78,6 +81,7 @@ jobs:
   linux:
     name: Linux
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         config: [Debug, Release]
@@ -86,9 +90,12 @@ jobs:
           - compiler: gcc-11
             cc: gcc-11
             cxx: g++-11
+            packages: gcc-11 g++-11
           - compiler: clang-14
             cc: clang-14
             cxx: clang++-14
+            # clang-14 ships the clang++-14 binary; there is no clang++-14 package
+            packages: clang-14
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -96,7 +103,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ${{ matrix.cc }} ${{ matrix.cxx }}
+        sudo apt-get install -y ${{ matrix.packages }}
 
     - name: Configure CMake
       run: |
@@ -115,3 +122,30 @@ jobs:
     #   working-directory: Build
     #   run: |
     #     ctest -C ${{ matrix.config }} --output-on-failure --verbose
+
+  ci-complete:
+    name: ci-complete
+    # Single aggregate check for branch protection to require, so the 14
+    # matrix-generated check names stay free to change.
+    #
+    # `if: always()` is load-bearing: without it this job is skipped whenever a
+    # dependency fails, and a skipped required check satisfies the requirement --
+    # inverting the gate. The step below then asserts every result is success, so
+    # failed, cancelled and skipped dependencies all fail the gate.
+    if: always()
+    needs: [windows, macos, ios, linux]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - name: Verify all jobs succeeded
+      env:
+        RESULTS: ${{ join(needs.*.result, ' ') }}
+      run: |
+        echo "Job results: $RESULTS"
+        for result in $RESULTS; do
+          if [ "$result" != "success" ]; then
+            echo "::error::CI did not succeed (results: $RESULTS)"
+            exit 1
+          fi
+        done
