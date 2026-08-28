@@ -119,6 +119,18 @@ namespace arcana
             return factory.to_return;
         }
 
+        template<typename CallableT>
+        void handle_unexpected(CallableT&& handler, cancellation& token)
+        {
+            this->then(inline_scheduler, token, [handler = std::forward<CallableT>(handler)](const expected<ResultT, ErrorT>& e)
+            {
+                if (e.has_error())
+                {
+                    handler(e.error());
+                }
+            });
+        }
+
     private:
         explicit task(payload_ptr payload)
             : m_payload{ std::move(payload) }
